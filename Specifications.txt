@@ -1,0 +1,5 @@
+- the rewards for reaching power pellet should be higher the closer nearest ghost is to pacman
+- the only actual action that you perform is updating pacmans position and the reward value for each next step is calculated based on other factors, such as ghost positions, pellet/power pellet positions)
+- first implement training and run it with ui, then remove ui and just run the training
+- variables to track to determine next rewards value: pellets, power pellet, ghosts within safety range
+- for the safety range, dont include ghost house

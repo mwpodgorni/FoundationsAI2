@@ -17,9 +17,9 @@ class State:
         self.p2 = p2
         # Variable for whether game is finished and needs restarting or not.
         self.isEnd = False
-        # A "compacted" way to represent our board. 
+        # A "compacted" way to represent our board.
         self.boardHash = None
-        # Initialise p1 to have the first move. 
+        # Initialise p1 to have the first move.
         # P1 will have symbol 1, P2 will have -1.
         self.playerSymbol = 1
 
@@ -131,9 +131,9 @@ class State:
                 # random board, with a probability of rand_nu.
                 # This is one of the learning parameter of Q-learning (see book)
                 rand_nu = random.uniform(0,1)
-                if rand_nu < self.p1.walk_len_nu: 
+                if rand_nu < self.p1.walk_len_nu:
                     self.board = self.generateRandBoard()
-                
+
                 # Player 1's turn
                 positions = self.availablePositions()
                 # EXPLOIT VS EXPLORE:
@@ -236,7 +236,7 @@ class State:
         print('-------------')
 
 
-# Data structure for defining the functions and actions 
+# Data structure for defining the functions and actions
 # that each player (aka the controller) should take.
 class Player:
     def __init__(self, name, exploration_rho=0.3, lr_alpha=0.2, discount_rate_gamma=0.9, walk_len_nu=0.2):
@@ -266,15 +266,15 @@ class Player:
             next_board[position] = symbol
             next_boardHash = self.getHash(next_board)
             if self.states_value.get(next_boardHash) is None:
-                value = 0 
-            else: 
+                value = 0
+            else:
                 value = self.states_value.get(next_boardHash)
             # print("value", value)
             if value > value_max:
                 value_max = value
                 action = position
                 duplicates = []
-                duplicates.append(action) 
+                duplicates.append(action)
             if value == value_max:
                 duplicates.append(position)
         # if there are multiple max values, pick one randomly
@@ -310,7 +310,7 @@ class Player:
         pickle.dump(self.states_value, fw)
         fw.close()
 
-    # Load a trained Q-table, for demo purposes or for 
+    # Load a trained Q-table, for demo purposes or for
     # resuming training.
     def loadPolicy(self, file):
         fr = open(file, 'rb')
@@ -355,28 +355,28 @@ if __name__ == "__main__":
 
     # NU: The Length of Walk
     # number of iterations that will be carried out in a sequence of connected actions.
-    
+
     # INITIALISE PARAMETERS
     exploration_rho=0.3
     lr_alpha=0.2
     discount_rate_gamma=0.9
     walk_len_nu = 0.2
-    
-    # training
-    p1 = Player("p1", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
-    p2 = Player("p2", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
 
-    st = State(p1, p2)
-    print("training...")
-    st.play(50000)
+    # training
+    # p1 = Player("p1", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
+    # p2 = Player("p2", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
+
+    # st = State(p1, p2)
+    # print("training...")
+    # st.play(50000)
 
     #play with human
     p1 = Player("computer", exploration_rho=0)
-    p1.loadPolicy("FoundationsOfGameAI/ExerciseSession8/code/policy_computer")
+    p1.loadPolicy("./policy_computer")
     # p1.savePolicy()
 #
-    p3 = Player("computer", exploration_rho=0.2)
-    p3.loadPolicy("FoundationsOfGameAI/ExerciseSession8/code/policy_computer")
+    # p3 = Player("computer", exploration_rho=0.2)
+    # p3.loadPolicy("./policy_computer")
 
 
     p2 = HumanPlayer("human")

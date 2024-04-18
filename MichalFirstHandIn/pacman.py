@@ -10,15 +10,15 @@ import random
 class Pacman(Entity):
     def __init__(self, node):
         Entity.__init__(self, node )
-        self.name = PACMAN    
+        self.name = PACMAN
         self.color = YELLOW
         self.direction = LEFT
         self.setBetweenNodes(LEFT)
         self.alive = True
         self.sprites = PacmanSprites(self)
-        # 
+        #
         # added fields
-        # 
+        #
         # ghost reference
         self.ghosts = None
         # nodes reference
@@ -30,7 +30,7 @@ class Pacman(Entity):
         # pellets left to collect
         self.leftoverPellets = []
         # if ghost is closer than specified distance, pacman will go into RUN_AWAY state
-        self.ghostTooCloseThreshold = 5000
+        self.ghostTooCloseThreshold = 3000
         # if freight ghost is closer than specified distance, pacman will go into SEEK_GHOST state
         self.seekGhostThreshold = 3000
 
@@ -50,7 +50,7 @@ class Pacman(Entity):
         self.alive = False
         self.direction = STOP
 
-    def update(self, dt):	
+    def update(self, dt):
         self.sprites.update(dt)
         self.position += self.directions[self.direction]*self.speed*dt
 
@@ -60,14 +60,14 @@ class Pacman(Entity):
         self.updateGoal()
         # update pacman's position
         self.updatePosition()
-    
+
     # update pacman state
     # priority: RUN_AWAY > SEEK_GHOST > SEEK_PELLET
     def updateState(self):
         nearestDangerGhost = self.getNearestGhost([SCATTER, CHASE])
         # if ghost found, get distance, if not set it to threshold +1
         nearestDangerGhostDistance = (nearestDangerGhost.position - self.position).magnitudeSquared() if nearestDangerGhost is not None else self.ghostTooCloseThreshold+1
-        
+
         nearestFreightenedGhost = self.getNearestGhost([FREIGHT])
         # if ghost found, get distance, if not set it to threshold +1
         nearestFreightenedGhostDistance = (nearestFreightenedGhost.position - self.position).magnitudeSquared() if nearestFreightenedGhost is not None else self.seekGhostThreshold+1
@@ -82,7 +82,7 @@ class Pacman(Entity):
         else:
             self.myState = SEEK_PELLET
             self.directionMethod = self.goalDirection
-    
+
     # update goal based on current state
     def updateGoal(self):
         if self.myState == SEEK_PELLET:
@@ -91,7 +91,7 @@ class Pacman(Entity):
             self.goal = self.getNearestGhost([SCATTER, CHASE]).target.position
         if self.myState == SEEK_GHOST:
             self.goal = self.getNearestGhost([FREIGHT]).target.position
-    
+
     # update pacman's position
     def updatePosition(self):
         if self.overshotTarget():
@@ -106,7 +106,7 @@ class Pacman(Entity):
             else:
                 self.target = self.getNewTarget(self.direction)
             self.setPosition()
-    
+
     def getValidDirections(self):
         directions = []
         for key in [UP, DOWN, LEFT, RIGHT]:
@@ -115,13 +115,13 @@ class Pacman(Entity):
         if len(directions) == 0:
             directions.append(self.direction)
         return directions
-    
+
     def isValidDirection(self, direction):
         if direction is not STOP:
             if self.node.neighbors[direction] is not None:
                 return True
         return False
-    
+
     # get pellet that is closed to the current pacman position
     def getNewNearestPellet(self):
         nearest_pellet = None
@@ -134,7 +134,7 @@ class Pacman(Entity):
                 nearest_distance_squared = distance_squared
                 nearest_pellet = pellet
         return nearest_pellet.position
-    
+
     # get direction towards which pacman should run away from a ghost
     # slightly biased to running away to sides, rather than straight
     def getRunAwayDirection(self, directions):
@@ -155,7 +155,7 @@ class Pacman(Entity):
             distances.append(vec.magnitudeSquared())
         index = distances.index(max(distances))
         return directions[index]
-    
+
     # get nearest ghost with one of the provided states
     def getNearestGhost(self, states):
         smallest_distance = float('inf')
@@ -165,15 +165,15 @@ class Pacman(Entity):
             if ghost.mode.current in states and distance < smallest_distance:
                 smallest_distance = distance
                 nearest_ghost = ghost
-        return nearest_ghost 
+        return nearest_ghost
 
     def eatPellets(self, pelletList):
         self.leftoverPellets = pelletList
         for pellet in pelletList:
             if self.collideCheck(pellet):
                 return pellet
-        return None    
-    
+        return None
+
     def collideGhost(self, ghost):
         return self.collideCheck(ghost)
 
