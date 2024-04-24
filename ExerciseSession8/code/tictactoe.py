@@ -119,6 +119,7 @@ class State:
                         board[row,col] = 1
                     else:
                         board[row,col] = -1
+        print('board', board)
         return board
 
     # Function that is called to actually play the games and learn.
@@ -127,6 +128,7 @@ class State:
             if i % 1000 == 0:
                 print("Iterations {}".format(i))
             while not self.isEnd:
+                print('start')
                 # We interrupt the current sequence and generate a totally
                 # random board, with a probability of rand_nu.
                 # This is one of the learning parameter of Q-learning (see book)
@@ -290,7 +292,7 @@ class Player:
 
     # At the end of game, backpropagate and update states value
     def feedReward(self, reward):
-        # Reverse the list of s tates, so that we start from the last state
+        # Reverse the list of states, so that we start from the last state
         # and propagate back to the first state.
         for st in reversed(self.states):
             if self.states_value.get(st) is None:
@@ -363,12 +365,12 @@ if __name__ == "__main__":
     walk_len_nu = 0.2
 
     # training
-    # p1 = Player("p1", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
-    # p2 = Player("p2", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
+    p1 = Player("p1", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
+    p2 = Player("p2", exploration_rho, lr_alpha, discount_rate_gamma, walk_len_nu)
 
-    # st = State(p1, p2)
-    # print("training...")
-    # st.play(50000)
+    st = State(p1, p2)
+    print("training...")
+    st.play(50000)
 
     #play with human
     p1 = Player("computer", exploration_rho=0)
@@ -379,7 +381,7 @@ if __name__ == "__main__":
     # p3.loadPolicy("./policy_computer")
 
 
-    p2 = HumanPlayer("human")
+    # p2 = HumanPlayer("human")
 
-    st = State(p1, p2)
-    st.play2()
+    # st = State(p1, p2)
+    # st.play()
