@@ -10,7 +10,6 @@ from pauser import Pause
 from text import TextGroup
 from sprites import LifeSprites
 from sprites import MazeSprites
-from mazes import MazeController
 from mazedata import MazeData
 
 class GameController(object):
@@ -33,9 +32,8 @@ class GameController(object):
         self.flashTimer = 0
         self.fruitCaptured = []
         self.fruitNode = None
-        self.maze = MazeController()
-        self.mazedata = MazeData()######
-        self.isEnd = False
+        self.mazedata = MazeData()
+        self.isEnd= False
 
     def setBackground(self):
         self.background_norm = pygame.surface.Surface(SCREENSIZE).convert()
@@ -57,8 +55,6 @@ class GameController(object):
         self.pacman = Pacman(self.nodes.getNodeFromTiles(*self.mazedata.obj.pacmanStart))
         self.pellets = PelletGroup(self.mazedata.obj.name+".txt")
         self.ghosts = GhostGroup(self.nodes.getStartTempNode(), self.pacman)
-        self.pacman.getGhosts(self.ghosts)
-        self.pacman.getNodes(self.nodes)
 
         self.ghosts.pinky.setStartNode(self.nodes.getNodeFromTiles(*self.mazedata.obj.addOffset(2, 3)))
         self.ghosts.inky.setStartNode(self.nodes.getNodeFromTiles(*self.mazedata.obj.addOffset(0, 3)))
@@ -71,8 +67,7 @@ class GameController(object):
         self.ghosts.inky.startNode.denyAccess(RIGHT, self.ghosts.inky)
         self.ghosts.clyde.startNode.denyAccess(LEFT, self.ghosts.clyde)
         self.mazedata.obj.denyGhostsAccess(self.ghosts, self.nodes)
-        # self.state = State(self.pacman, self.ghosts, self.nodes, self.pellets)
-
+        # print('node list', self.nodes.getListOfNodesVector())
 
     def update(self):
         dt = self.clock.tick(30) / 1000.0
@@ -112,7 +107,7 @@ class GameController(object):
             if event.type == QUIT:
                 exit()
             elif event.type == KEYDOWN:
-                if event.key == K_SPACE and self.flashBG is not True:
+                if event.key == K_SPACE:
                     if self.pacman.alive:
                         self.pause.setPause(playerPaused=True)
                         if not self.pause.paused:
@@ -167,6 +162,7 @@ class GameController(object):
         if self.pellets.numEaten == 50 or self.pellets.numEaten == 140:
             if self.fruit is None:
                 self.fruit = Fruit(self.nodes.getNodeFromTiles(9, 20), self.level)
+                print(self.fruit)
         if self.fruit is not None:
             if self.pacman.collideCheck(self.fruit):
                 self.updateScore(self.fruit.points)
