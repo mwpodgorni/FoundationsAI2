@@ -14,6 +14,7 @@ class Pacman(Entity):
         self.setBetweenNodes(LEFT)
         self.alive = True
         self.sprites = PacmanSprites(self)
+        self.nextMove = False
 
     def reset(self):
         Entity.reset(self)
@@ -38,6 +39,7 @@ class Pacman(Entity):
         # print('after', direction)
         if self.overshotTarget():
             self.node = self.target
+            self.nextMove = True
             if self.node.neighbors[PORTAL] is not None:
                 self.node = self.node.neighbors[PORTAL]
             self.target = self.getNewTarget(direction)

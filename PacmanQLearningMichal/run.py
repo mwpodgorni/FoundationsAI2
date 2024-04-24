@@ -33,7 +33,7 @@ class GameController(object):
         self.fruitCaptured = []
         self.fruitNode = None
         self.mazedata = MazeData()
-        self.isEnd= False
+        self.isEnd = False
 
     def setBackground(self):
         self.background_norm = pygame.surface.Surface(SCREENSIZE).convert()
@@ -131,6 +131,7 @@ class GameController(object):
                 self.ghosts.startFreight()
             if self.pellets.isEmpty():
                 self.flashBG = True
+                isEnd = True
                 self.hideEntities()
                 self.pause.setPause(pauseTime=3, func=self.nextLevel)
 
@@ -153,6 +154,7 @@ class GameController(object):
                         self.pacman.die()               
                         self.ghosts.hide()
                         if self.lives <= 0:
+                            isEnd = True
                             self.textgroup.showText(GAMEOVERTXT)
                             self.pause.setPause(pauseTime=3, func=self.restartGame)
                         else:
