@@ -17,26 +17,52 @@ class State:
         self.isEnd = False
         self.gridHash = None
         self.game = None
+        self.range_limit = 5
         # pellet = 1
         # powerPellet = 2
-        # ghost = 3 
+        # ghost = 3
         # scaredGhost = 4
         # pacman = 5
         # empty = 0
-    
+
     def getHash(self):
         self.boardHash = str(self.board.reshape(BOARD_COLS * BOARD_ROWS))
         return self.boardHash
     def setupBoard(self):
+        pacman_node = self.game.pacman.node.position
+        pacman_node = (pacman_node.x, pacman_node.y)
+        print('pacman_node', pacman_node)
+        # Define the range to consider around Pacman's node
+        # Loop over the nodes within the specified range around Pacman along both axes
         for node in self.game.nodes.getListOfNodesVector():
-            self.board[(node[0],node[1])] =0
-        print ('setup board', self.board.values())
+            # print('node', node)
+            if abs(node[0] - pacman_node[0]) <= self.range_limit * TILEWIDTH and abs(node[1] - pacman_node[1]) <= self.range_limit * TILEHEIGHT:
+                self.board[(node[0], node[1])] = self.getNodeSymbol(node)
+
+        print ('setup board', self.board)
+        print ('setup board values', self.board.values())
+        # for node in self.game.nodes.getListOfNodesVector():
+        #     self.board[(node[0],node[1])] =0
+        # print ('setup board', self.board)
+        # print ('setup board values', self.board.values())
 
     def updateState(self, position):
-        nodes = self.game.nodes.getListOfNodesVector()
-        # print('nodes', nodes)
+                # Clear the board before updating
+        self.board = {}
+
+        pacman_node = self.game.pacman.node.position
+        pacman_node = (pacman_node.x, pacman_node.y)
+
+        # Define the range to consider around Pacman's node
+
+        # Loop over the nodes within the specified range around Pacman
         for node in self.game.nodes.getListOfNodesVector():
-            self.board[(node[0],node[1])] = self.getNodeSymbol(node) 
+            if abs(node[0] - pacman_node[0]) <= self.range_limit* TILEWIDTH and abs(node[1] - pacman_node[1]) <= self.range_limit* TILEHEIGHT:
+                self.board[(node[0], node[1])] = self.getNodeSymbol(node)
+        # nodes = self.game.nodes.getListOfNodesVector()
+        # # print('nodes', nodes)
+        # for node in self.game.nodes.getListOfNodesVector():
+        #     self.board[(node[0],node[1])] = self.getNodeSymbol(node)
         print('board', self.board.values())
 
     def getNodeSymbol(self, node):
@@ -46,7 +72,7 @@ class State:
         pellets = [(p.position.x, p.position.y) for p in self.game.pellets.pelletList]
         powerPellets = [(p.position.x, p.position.y) for p in self.game.pellets.powerpellets]
         # print('=======================')
-        print(pacmanNode)
+        # print(pacmanNode)
         if pacmanNode == node:
             return 5
         if node in ghostDanger:
@@ -58,7 +84,7 @@ class State:
             return 2
         if node in pellets:
             return 1
-        
+
         # print('ghost skcared', ghostScared)
         # print('pacman', pacman)
         # print('pellets', pellets)
@@ -71,7 +97,7 @@ class State:
             if ghost.name != INKY and ghost.name != CLYDE and ghost.mode.current in states:
                 ghosts.append((int(ghost.target.position.x), int(ghost.target.position.y)))
         return ghosts
-                    
+
     def play(self,iterations = 10):
         for i in range(iterations):
             if i % 10 == 0:
@@ -121,7 +147,7 @@ class State:
                 self.p1.feedReward(0)
     def pacmanWon(self):
         return self.game.pacman.alive
-    
+
     def getNearestNode(self, position):
             print(f'getNearestNode:{position}')
             min_distance = float('inf')
@@ -134,7 +160,7 @@ class State:
                     min_distance = distance
                     nearest_node = self.game.nodes.nodesLUT[node_position]
             return nearest_node
-    
+
 if __name__ == "__main__":
     s = State()
     s.play(1)
