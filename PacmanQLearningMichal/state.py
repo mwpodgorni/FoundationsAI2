@@ -64,19 +64,18 @@ class State:
         # for node in self.game.nodes.getListOfNodesVector():
         #     self.board[(node[0],node[1])] = self.getNodeSymbol(node)
         print('board', self.board.values())
+        # print('board', self.board)
 
     def getNodeSymbol(self, node):
         ghostDanger = self.getGhostsTargets([SCATTER, CHASE])
-        ghostScared = self.getGhostsTargets([[FREIGHT]])
+        ghostScared = self.getGhostsTargets([FREIGHT])
         pacmanNode = (self.game.pacman.node.position.x, self.game.pacman.node.position.y)
         pellets = [(p.position.x, p.position.y) for p in self.game.pellets.pelletList]
         powerPellets = [(p.position.x, p.position.y) for p in self.game.pellets.powerpellets]
         # print('=======================')
-        # print(pacmanNode)
         if pacmanNode == node:
             return 5
         if node in ghostDanger:
-            print('return 3')
             return 3
         if node in ghostScared:
             return 4
@@ -94,8 +93,8 @@ class State:
     def getGhostsTargets(self, states):
         ghosts = []
         for ghost in self.game.ghosts:
-            if ghost.name != INKY and ghost.name != CLYDE and ghost.mode.current in states:
-                ghosts.append((int(ghost.target.position.x), int(ghost.target.position.y)))
+            if  ghost.mode.current in states:
+                ghosts.append((int(ghost.node.position.x), int(ghost.node.position.y)))
         return ghosts
 
     def play(self,iterations = 10):
