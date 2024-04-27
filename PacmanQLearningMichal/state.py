@@ -18,6 +18,7 @@ class State:
         self.gridHash = None
         self.game = None
         self.range_limit = 5
+        self.pacmanSymbol = 5
         # pellet = 1
         # powerPellet = 2
         # ghost = 3
@@ -26,6 +27,7 @@ class State:
         # empty = 0
 
     def getHash(self):
+
         self.boardHash = str(self.board.reshape(BOARD_COLS * BOARD_ROWS))
         return self.boardHash
     def setupBoard(self):
@@ -83,11 +85,6 @@ class State:
             return 2
         if node in pellets:
             return 1
-
-        # print('ghost skcared', ghostScared)
-        # print('pacman', pacman)
-        # print('pellets', pellets)
-        # print('powerpellets', powerPellets)
         return 0
 
     def getGhostsTargets(self, states):
@@ -110,22 +107,22 @@ class State:
                     print('hello')
                     # rand_nu = random.uniform(0,1)
                     # if rand_nu < self.p1.walk_len_nu:
-                    #     self.board = self.game.pacman.randomDirection()
+                        # self.board = self.game.pacman.randomDirection()
 
-                    # positions = self.game.pacman.validDirections()
+                    positions = self.game.pacman.validDirections()
                     # # Explore: select a random action with a probability of rand_rho...
-                    # rand_rho = random.uniform(0,1)
-                    # if rand_rho < self.p1.exploration_rho:
-                    #     # take random action
-                    #     idx = np.random.choice(len(positions))
-                    #     p1_action = positions[idx]
+                    rand_rho = random.uniform(0,1)
+                    if rand_rho < self.game.pacman.exploration_rho:
+                        # take random action
+                        idx = np.random.choice(len(positions))
+                        p1_action = positions[idx]
                     # # Exploit: else, take the best action for the current state-action pair.
-                    # else:
-                    #     p1_action = self.game.pacman.chooseAction(positions, self.board, self.playerSymbol)
+                    else:
+                        p1_action = self.game.pacman.chooseAction(positions, self.board, self.pacmanSymbol)
                     # # Apply the action and update board state.
-                    self.updateState('fuck')
-                    # board_hash = self.getHash()
-                    # self.p1.addState(board_hash)
+                    self.updateState(p1_action)
+                    board_hash = self.getHash()
+                    self.p1.addState(board_hash)
                 self.game.update()
 
     def giveReward(self):

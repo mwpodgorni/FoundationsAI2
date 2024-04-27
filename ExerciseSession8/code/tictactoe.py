@@ -27,6 +27,7 @@ class State:
     # A hash is simply the current board, represented as a single row.
     def getHash(self):
         self.boardHash = str(self.board.reshape(BOARD_COLS * BOARD_ROWS))
+        print('boardHash', self.boardHash)
         return self.boardHash
 
     # Function for checking whether there is a winner in the current state of the board.
