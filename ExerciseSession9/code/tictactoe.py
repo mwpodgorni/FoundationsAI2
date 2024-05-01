@@ -2,37 +2,25 @@ import numpy as np
 import pickle
 import random
 
-# Size of our board.
 BOARD_ROWS = 3
 BOARD_COLS = 3
 
-# Data structure for holding information about the current state
-# of the game, as well as for progressing the learning.
+
 class State:
     def __init__(self, p1, p2):
-        # Generate a tictactoe board full of 0s.
         self.board = np.zeros((BOARD_ROWS, BOARD_COLS))
-        # Initialise the two players that will play against each other.
         self.p1 = p1
         self.p2 = p2
-        # Variable for whether game is finished and needs restarting or not.
         self.isEnd = False
-        # A "compacted" way to represent our board.
         self.boardHash = None
-        # Initialise p1 to have the first move.
-        # P1 will have symbol 1, P2 will have -1.
+        # init p1 plays first
         self.playerSymbol = 1
 
-    # Get unique hash of current board state.
-    # A hash is simply the current board, represented as a single row.
+    # get unique hash of current board state
     def getHash(self):
         self.boardHash = str(self.board.reshape(BOARD_COLS * BOARD_ROWS))
-        print('boardHash', self.boardHash)
         return self.boardHash
 
-    # Function for checking whether there is a winner in the current state of the board.
-    # This will be checked at the beginning of every turn.
-    # To check for a winner, check if the numbers sum up to 3 or -3 in any of the directions.
     def winner(self):
         # row
         for i in range(BOARD_ROWS):
@@ -62,15 +50,14 @@ class State:
                 return -1
 
         # tie
-        # No more available positions --> game ends.
+        # no available positions
         if len(self.availablePositions()) == 0:
             self.isEnd = True
             return 0
-        # Not end
+        # not end
         self.isEnd = False
         return None
 
-    # Compute the available positions by checking which positions have 0s.
     def availablePositions(self):
         positions = []
         for i in range(BOARD_ROWS):
@@ -79,16 +66,12 @@ class State:
                     positions.append((i, j))  # need to be tuple
         return positions
 
-    # Given the current board, and the position where the player
-    # wants to put his symbol, updates the board to the new state.
     def updateState(self, position):
         self.board[position] = self.playerSymbol
-
         # switch to another player
         self.playerSymbol = -1 if self.playerSymbol == 1 else 1
 
-    # Give rewards to the players depending on who won.
-    # Called only when game ends.
+    # only when game ends
     def giveReward(self):
         result = self.winner()
         # backpropagate reward
@@ -98,65 +81,54 @@ class State:
         elif result == -1:
             self.p1.feedReward(0)
             self.p2.feedReward(1)
-        # Since P1 started (thus had an advantage) but the game
-        # still ended in tie, P2 should have more points.
         else:
             self.p1.feedReward(0.1)
             self.p2.feedReward(0.5)
 
-    # Reset the board to 0s.
+    # board reset
     def reset(self):
         self.board = np.zeros((BOARD_ROWS, BOARD_COLS))
         self.boardHash = None
         self.isEnd = False
         self.playerSymbol = 1
 
-    # Generate a totally random board.
     def generateRandBoard(self):
         board = np.zeros((BOARD_ROWS, BOARD_COLS))
-        for row in range(1,BOARD_ROWS):
+        for row in range(1, BOARD_ROWS):
             for col in range(BOARD_COLS):
-                if random.uniform(0,1) > 0.5:
-                    if random.uniform(0,1) > 0.5:
-                        board[row,col] = 1
+                if random.uniform(0, 1) > 0.5:
+                    if random.uniform(0, 1) > 0.5:
+                        board[row, col] = 1
                     else:
-                        board[row,col] = -1
-        print('board', board)
+                        board[row, col] = -1
         return board
 
-    # Function that is called to actually play the games and learn.
     def play(self, iterations=100):
         for i in range(iterations):
             if i % 1000 == 0:
                 print("Iterations {}".format(i))
             while not self.isEnd:
-                print('while ----------------------------------------')
-                # We interrupt the current sequence and generate a totally
-                # random board, with a probability of rand_nu.
-                # This is one of the learning parameter of Q-learning (see book)
-                rand_nu = random.uniform(0,1)
+                rand_nu = random.uniform(0, 1)
                 if rand_nu < self.p1.walk_len_nu:
                     self.board = self.generateRandBoard()
-
-                # Player 1's turn
+                # Player 1
                 positions = self.availablePositions()
-                # EXPLOIT VS EXPLORE:
-                # Explore: select a random action with a probability of rand_rho...
-                rand_rho = random.uniform(0,1)
+                rand_rho = random.uniform(0, 1)
                 if rand_rho < self.p1.exploration_rho:
                     # take random action
                     idx = np.random.choice(len(positions))
                     p1_action = positions[idx]
-                # Exploit: else, take the best action for the current state-action pair.
                 else:
-                    p1_action = self.p1.chooseAction(positions, self.board, self.playerSymbol)
-                # Apply the action and update board state.
+                    p1_action = self.p1.chooseAction(
+                        positions, self.board, self.playerSymbol
+                    )
+                # take action and update board state
                 self.updateState(p1_action)
                 board_hash = self.getHash()
                 self.p1.addState(board_hash)
-                # Check board status if it is end
+                # check board status if it is end
+
                 win = self.winner()
-                # IF YES: end the game
                 if win is not None:
                     # self.showBoard()
                     # ended with p1 either win or draw
@@ -165,11 +137,13 @@ class State:
                     self.p2.reset()
                     self.reset()
                     break
-                # IF NO: player 2's turn
+
                 else:
                     # Player 2
                     positions = self.availablePositions()
-                    p2_action = self.p2.chooseAction(positions, self.board, self.playerSymbol)
+                    p2_action = self.p2.chooseAction(
+                        positions, self.board, self.playerSymbol
+                    )
                     self.updateState(p2_action)
                     board_hash = self.getHash()
                     self.p2.addState(board_hash)
@@ -184,10 +158,7 @@ class State:
                         self.reset()
                         break
 
-
-    # Function to be called for demo, when play with human.
-    # Same as "play()" but without the Player 2's turn.
-    # Instead, takes input from the terminal.
+    # play with human
     def play2(self):
         while not self.isEnd:
             # Player 1
@@ -222,49 +193,47 @@ class State:
                     self.reset()
                     break
 
-    # Show the current state of the board in an easy-to-read format.
     def showBoard(self):
         # p1: x  p2: o
         for i in range(0, BOARD_ROWS):
-            print('-------------')
-            out = '| '
+            print("-------------")
+            out = "| "
             for j in range(0, BOARD_COLS):
                 if self.board[i, j] == 1:
-                    token = 'x'
+                    token = "x"
                 if self.board[i, j] == -1:
-                    token = 'o'
+                    token = "o"
                 if self.board[i, j] == 0:
-                    token = ' '
-                out += token + ' | '
+                    token = " "
+                out += token + " | "
             print(out)
-        print('-------------')
+        print("-------------")
 
 
-# Data structure for defining the functions and actions
-# that each player (aka the controller) should take.
 class Player:
-    def __init__(self, name, exploration_rho=0.3, lr_alpha=0.2, discount_rate_gamma=0.9, walk_len_nu=0.2):
+    def __init__(
+        self,
+        name,
+        exploration_rho=0.3,
+        lr_alpha=0.2,
+        discount_rate_gamma=0.9,
+        walk_len_nu=0.2,
+    ):
         self.name = name
         self.states = []  # record all positions taken
-        self.states_value = {}  # state -> value
-        # Q-Learning parameters
         self.exploration_rho = exploration_rho
         self.lr_alpha = lr_alpha
         self.discount_rate_gamma = discount_rate_gamma
         self.walk_len_nu = walk_len_nu
+        self.states_value = {}  # state -> value
 
-    # Same as before. It is needed in the next function.
     def getHash(self, board):
         boardHash = str(board.reshape(BOARD_COLS * BOARD_ROWS))
         return boardHash
 
-    # Chooses an action to be taken based on the learnt information.
     def chooseAction(self, positions, current_board, symbol):
         value_max = -999
         duplicates = []
-        # Find the position that will give the best value by
-        # iteratively checking each available position's value
-        # if the player was to take that position.
         for position in positions:
             next_board = current_board.copy()
             next_board[position] = symbol
@@ -279,49 +248,44 @@ class Player:
                 action = position
                 duplicates = []
                 duplicates.append(action)
+            # if there are multiple max values, pick one randomly
             if value == value_max:
                 duplicates.append(position)
-        # if there are multiple max values, pick one randomly
-        if len(duplicates)> 1:
+        # print("{} takes action {}".format(self.name, action))
+        if len(duplicates) > 1:
             return random.choice(duplicates)
-        # else, just pick the highest action
         else:
             return action
 
-    # Append a hash state to the list of all states
+    # append a hash state
     def addState(self, state):
         self.states.append(state)
 
-    # At the end of game, backpropagate and update states value
+    # at the end of game, backpropagate and update states value
     def feedReward(self, reward):
-        # Reverse the list of states, so that we start from the last state
-        # and propagate back to the first state.
         for st in reversed(self.states):
             if self.states_value.get(st) is None:
                 self.states_value[st] = 0
             Q = self.states_value[st]
-            maxQ = self.states_value[st]
-            self.states_value[st] = Q * (1 - self.lr_alpha) + self.lr_alpha * (self.discount_rate_gamma * reward + maxQ)
+            self.states_value[st] = Q * (1 - self.lr_alpha) + self.lr_alpha * (
+                self.discount_rate_gamma * reward
+            )
             reward = self.states_value[st]
 
-    # Resets the list of states taken.
     def reset(self):
         self.states = []
 
-    # Saves Q-table, for later reuse.
     def savePolicy(self):
-        fw = open('policy_' + str(self.name), 'wb')
+        fw = open("policy_" + str(self.name), "wb")
         pickle.dump(self.states_value, fw)
         fw.close()
 
-    # Load a trained Q-table, for demo purposes or for
-    # resuming training.
     def loadPolicy(self, file):
-        fr = open(file, 'rb')
+        fr = open(file, "rb")
         self.states_value = pickle.load(fr)
         fr.close()
 
-# Structure for when playing against human.
+
 class HumanPlayer:
     def __init__(self, name):
         self.name = name
@@ -360,10 +324,9 @@ if __name__ == "__main__":
     # NU: The Length of Walk
     # number of iterations that will be carried out in a sequence of connected actions.
 
-    # INITIALISE PARAMETERS
-    exploration_rho=0.3
-    lr_alpha=0.2
-    discount_rate_gamma=0.9
+    exploration_rho = 0.3
+    lr_alpha = 0.2
+    discount_rate_gamma = 0.9
     walk_len_nu = 0.2
 
     # training
@@ -372,18 +335,14 @@ if __name__ == "__main__":
 
     st = State(p1, p2)
     print("training...")
-    st.play(50000)
+    # st.play(1000)
 
-    #play with human
+    # play with human
     p1 = Player("computer", exploration_rho=0)
-    p1.loadPolicy("./policy_computer")
-    # p1.savePolicy()
-#
-    # p3 = Player("computer", exploration_rho=0.2)
-    # p3.loadPolicy("./policy_computer")
+    p1.loadPolicy("policy_computer")
+    p1.savePolicy()
 
+    p2 = HumanPlayer("human")
 
-    # p2 = HumanPlayer("human")
-
-    # st = State(p1, p2)
-    # st.play()
+    st = State(p1, p2)
+    st.play2()
