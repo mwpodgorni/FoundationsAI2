@@ -320,7 +320,7 @@ class GameController(object):
     def setPacmanInRandomPosition(self):
         homeNode: Node = self.nodes.getNodeFromTiles(*self.mazedata.obj.addOffset(2, 3))
 
-        self.pacman = Pacman(self.nodes.getRandomNodeAwayFrom(homeNode.position, 60.0))  # type: ignore
+        self.pacman = Pacman(self.nodes.getRandomNodeAwayFrom(homeNode.position, 100.0))  # type: ignore
 
     def resetLevel(self):
         self.pause.paused = False

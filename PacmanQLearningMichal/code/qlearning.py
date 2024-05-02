@@ -95,6 +95,9 @@ class ReinforcementProblem:
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
+        print('set in random position')
+        print('-')
+
         self.game.setPacmanInRandomPosition()
         return self.getCurrentState()
 
@@ -244,4 +247,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 10000, 0.7, 0.75, 0.4, 0.03)
+    QLearning(problem, 100000, 0.7, 0.75, 0.4, 0.01)
