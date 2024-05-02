@@ -9,7 +9,7 @@ import pickle
 import random
 
 import pygame
-
+import time
 
 from vector import Vector2
 from run import GameController
@@ -127,6 +127,7 @@ class ReinforcementProblem:
     # Take the given action and state, and return
     # a pair consisting of the reward and the new state.
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
+        print('takeAction')
         previousScore = self.game.score
         self.game.pacman.learntDirection = action
         self.updateGameForSeconds(0.1)
@@ -161,8 +162,15 @@ def QLearning(
     # Get a starting state.
     state = problem.getRandomState()
     saveIterations = 50
-    # Repeat a number of times.
-    for i in range(iterations):
+    i=0
+    while i < iterations:
+    # for i in range(iterations):
+        # print('pause', problem.game.pause.paused)
+        if problem.game.pause.paused:
+            print("game is paused. Waiting..", problem.game.pause.paused)
+            time.sleep(1)          
+            problem.updateGameForSeconds(0.1)
+            continue  
         if i % saveIterations == 0:
             print("Saving at iteration:", i)
             store.save()
@@ -200,7 +208,7 @@ def QLearning(
 
         # And update the state.
         state = newState
-
+        i += 1
 
 if __name__ == "__main__":
     # The store for Q-values, we use this to make decisions based on
@@ -208,4 +216,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 10000, 0.7, 0.75, 0.2, 0.01)
+    QLearning(problem, 10, 0.7, 0.75, 0.2, 0.01)
