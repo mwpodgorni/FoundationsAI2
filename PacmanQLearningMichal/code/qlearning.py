@@ -17,14 +17,19 @@ from constants import UP, DOWN, RIGHT, LEFT
 
 
 class State:
-    def __init__(self, playerPosition: Vector2) -> None:
+    def __init__(self, playerPosition: tuple, pellets: list[tuple], powerPellets: list[tuple], dangerGhosts: list[tuple], scaredGhosts: list[tuple]) -> None:
         # TODO: Add more variables in the state so that the agent can account for more things in its environment
         # examples: (ghosts,)
         # warning: The more variables you add, the more space it will have search and it will take more time to train
-        self.playerPosition = playerPosition.asTuple()
+        # print('inti state', playerPosition, pellets, powerPellets, dangerGhosts)
+        self.playerPosition = playerPosition
+        self.pellets = pellets
+        self.powerPellets = powerPellets
+        self.dangerGhosts = dangerGhosts
+        self.scaredGhosts = scaredGhosts
 
     def __str__(self) -> str:
-        return "{}.{}".format(self.playerPosition[0], self.playerPosition[1])
+        return "{}.{} {}.{}.{}.{}".format(self.playerPosition[0], self.playerPosition[1], len(self.pellets), len(self.powerPellets), len(self.dangerGhosts), len(self.scaredGhosts))
 
 
 class Action(IntEnum):
@@ -85,7 +90,8 @@ class ReinforcementProblem:
         self.game.restartGameRandom()
 
     def getCurrentState(self) -> State:
-        return State(self.game.pacman.position)
+        # return State(self.game.pacman.position)
+        return State(self.game.pacmanPosition(), self.game.getPellets(), self.game.getPowerPellets(), self.game.dangerGhosts(), self.game.scaredGhosts())
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
@@ -127,13 +133,34 @@ class ReinforcementProblem:
     # Take the given action and state, and return
     # a pair consisting of the reward and the new state.
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
-        print('takeAction')
+        # print('takeAction')
         previousScore = self.game.score
         self.game.pacman.learntDirection = action
         self.updateGameForSeconds(0.1)
+        reward = 0
+        if self.game.lastPacmanMove != 'justMove':
+            print('lastPacmanMove', self.game.lastPacmanMove)
+        if self.game.lastPacmanMove == 'justMove':
+            self.game.lastPacmanMove = None
+            reward = 0
+        elif self.game.lastPacmanMove == 'hitGhost':
+            self.game.lastPacmanMove = None
+            reward = -20
+        elif self.game.lastPacmanMove == 'atePellet':
+            self.game.lastPacmanMove = None
+            reward = 20
+        elif self.game.lastPacmanMove == 'atePowerPellet':
+            self.game.lastPacmanMove = None
+            reward = 30.0 
+        elif self.game.lastPacmanMove == 'ateGhost':
+            self.game.lastPacmanMove = None
+            reward = 40.0     
         # TODO: Adjust the reward function to make it learn better
-        reward = self.game.score - previousScore
+        # reward = self.game.score - previousScore
+        if reward != 0:
+            print('reward', reward)
         newState = self.getCurrentState()
+        # print('new state', newState)
         return reward, newState
 
     # PARAMETERS:
@@ -167,7 +194,7 @@ def QLearning(
     # for i in range(iterations):
         # print('pause', problem.game.pause.paused)
         if problem.game.pause.paused:
-            print("game is paused. Waiting..", problem.game.pause.paused)
+            # print("game is paused. Waiting..")
             time.sleep(1)          
             problem.updateGameForSeconds(0.1)
             continue  
@@ -209,6 +236,7 @@ def QLearning(
         # And update the state.
         state = newState
         i += 1
+    print('end while loop')
 
 if __name__ == "__main__":
     # The store for Q-values, we use this to make decisions based on
@@ -216,4 +244,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 10, 0.7, 0.75, 0.2, 0.01)
+    QLearning(problem, 10000, 0.7, 0.75, 0.4, 0.03)

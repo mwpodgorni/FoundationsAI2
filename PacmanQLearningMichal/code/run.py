@@ -29,7 +29,7 @@ from text import TextGroup
 from sprites import LifeSprites
 from sprites import MazeSprites
 from mazedata import MazeData
-
+from constants import *
 
 class GameController(object):
     def __init__(self):
@@ -49,6 +49,8 @@ class GameController(object):
         self.fruitCaptured = []
         self.fruitNode = None
         self.mazedata = MazeData()  ######
+        self.range_limit = 5
+        self.lastPacmanMove = None
 
     def setBackground(self):
         self.background_norm = pygame.surface.Surface(SCREENSIZE).convert()
@@ -142,6 +144,7 @@ class GameController(object):
     def update(self):
         TIMESCALE = 2.0
 
+        # dt = self.clock.tick(30) / 1000.0
         dt = self.clock.tick(60) / 1000.0 * TIMESCALE
         self.textgroup.update(dt)
         self.pellets.update(dt)
@@ -149,6 +152,8 @@ class GameController(object):
             self.ghosts.update(dt)
             if self.fruit is not None:
                 self.fruit.update(dt)
+            if self.lastPacmanMove!='atePellet':
+                self.lastPacmanMove = 'justMove'
             self.checkPelletEvents()
             self.checkGhostEvents()
             self.checkFruitEvents()
@@ -192,6 +197,7 @@ class GameController(object):
     def checkPelletEvents(self):
         pellet = self.pacman.eatPellets(self.pellets.pelletList)
         if pellet:
+            self.lastPacmanMove = 'atePellet'
             self.pellets.numEaten += 1
             self.updateScore(pellet.points)
             if self.pellets.numEaten == 30:
@@ -200,6 +206,7 @@ class GameController(object):
                 self.ghosts.clyde.startNode.allowAccess(LEFT, self.ghosts.clyde)
             self.pellets.pelletList.remove(pellet)
             if pellet.name == POWERPELLET:
+                self.lastPacmanMove = 'atePowerPellet'
                 self.ghosts.startFreight()
             if self.pellets.isEmpty():
                 self.flashBG = True
@@ -210,6 +217,7 @@ class GameController(object):
         for ghost in self.ghosts:
             if self.pacman.collideGhost(ghost):
                 if ghost.mode.current is FREIGHT:
+                    self.lastPacmanMove = 'ateGhost'
                     self.pacman.visible = False
                     ghost.visible = False
                     self.updateScore(ghost.points)
@@ -226,6 +234,7 @@ class GameController(object):
                     ghost.startSpawn()
                     self.nodes.allowHomeAccess(ghost)
                 elif ghost.mode.current is not SPAWN:
+                    self.lastPacmanMove = 'hitGhost'
                     if self.pacman.alive:
                         self.lives -= 1
                         self.lifesprites.removeImage()
@@ -345,6 +354,39 @@ class GameController(object):
 
         pygame.display.update()
 
+
+    def pacmanPosition(self):
+        return (int(self.pacman.node.position.x), int(self.pacman.node.position.y))
+    def getPellets(self):
+        pellets = []
+        pacman_node = self.pacman.node.position
+        pacman_node = (pacman_node.x, pacman_node.y)
+        for p in self.pellets.pelletList:
+            if abs(p.position.x - pacman_node[0]) <= self.range_limit * TILEWIDTH and abs( p.position.y - pacman_node[1]) <= self.range_limit * TILEHEIGHT:
+                pellets.append((p.position.x, p.position.y))
+        return pellets
+    def getPowerPellets(self):
+        powerPellets = []
+        pacman_node = self.pacman.node.position
+        pacman_node = (pacman_node.x, pacman_node.y)
+        for p in self.pellets.powerpellets:
+            if abs(p.position.x - pacman_node[0]) <= self.range_limit * TILEWIDTH and abs( p.position.y - pacman_node[1]) <= self.range_limit * TILEHEIGHT:
+                powerPellets.append((p.position.x, p.position.y))
+        return powerPellets
+    def dangerGhosts(self):
+        return self.getGhostsTargets([SCATTER, CHASE])
+    def scaredGhosts(self):
+        return self.getGhostsTargets([FREIGHT])
+    def getGhostsTargets(self, states):
+        ghosts = []
+        pacman_node = self.pacman.node.position
+        pacman_node = (pacman_node.x, pacman_node.y)
+        for ghost in self.ghosts:
+            if  ghost.mode.current in states:
+                g_node = ghost.node.position
+                if abs(g_node.x - pacman_node[0]) <= self.range_limit * TILEWIDTH and abs( g_node.y - pacman_node[1]) <= self.range_limit * TILEHEIGHT:
+                    ghosts.append((int(ghost.node.position.x), int(ghost.node.position.y)))
+        return ghosts
 
 if __name__ == "__main__":
     game = GameController()
