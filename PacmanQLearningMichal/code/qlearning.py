@@ -17,19 +17,25 @@ from constants import UP, DOWN, RIGHT, LEFT
 
 
 class State:
-    def __init__(self, playerPosition: tuple, pellets: list[tuple], powerPellets: list[tuple], dangerGhosts: list[tuple], scaredGhosts: list[tuple]) -> None:
+    def __init__(self, playerPosition: tuple, playerDir:str,  pellets: list[tuple], powerPellets: list[tuple],
+                  nearestDangerGhost: float, ghostDirection:str, scaredGhosts: list[tuple]) -> None:
         # TODO: Add more variables in the state so that the agent can account for more things in its environment
         # examples: (ghosts,)
         # warning: The more variables you add, the more space it will have search and it will take more time to train
         # print('inti state', playerPosition, pellets, powerPellets, dangerGhosts)
         self.playerPosition = playerPosition
+        self.playerDir = playerDir
         self.pellets = pellets
         self.powerPellets = powerPellets
-        self.dangerGhosts = dangerGhosts
+        self.nearestDangerGhost = nearestDangerGhost
+        self.nearestDangerGhostDir = ghostDirection
         self.scaredGhosts = scaredGhosts
 
     def __str__(self) -> str:
-        return "{}.{} {}.{}.{}.{}".format(self.playerPosition[0], self.playerPosition[1], len(self.pellets), len(self.powerPellets), len(self.dangerGhosts), len(self.scaredGhosts))
+        return "{}.{}.{}".format(self.nearestDangerGhost,self.playerDir, self.nearestDangerGhostDir) 
+        # return "{}.{} | {} | {}.{}.{}".format(self.playerPosition[0], self.playerPosition[1], 
+        #                                             self.nearestDangerGhost,
+        #                                             len(self.pellets), len(self.powerPellets), len(self.scaredGhosts))
 
 
 class Action(IntEnum):
@@ -91,13 +97,11 @@ class ReinforcementProblem:
 
     def getCurrentState(self) -> State:
         # return State(self.game.pacman.position)
-        return State(self.game.pacmanPosition(), self.game.getPellets(), self.game.getPowerPellets(), self.game.dangerGhosts(), self.game.scaredGhosts())
+        return State(self.game.pacmanPosition(), self.game.pacman.direction, self.game.getPellets(), self.game.getPowerPellets(), 
+                     self.game.nearestDangerGhost(), self.game.nearestDangerGhostDir(), self.game.scaredGhosts())
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
-        print('set in random position')
-        print('-')
-
         self.game.setPacmanInRandomPosition()
         return self.getCurrentState()
 
@@ -105,6 +109,8 @@ class ReinforcementProblem:
     def getAvailableActions(self, state: State) -> list[Action]:
         directions = self.game.pacman.validDirections()
 
+        if self.game.pacman.direction*-1 not in directions:
+            directions.append(self.game.pacman.direction*-1)
         def intDirectionToString(dir: Action) -> str:
             match dir:
                 case Action.UP:
@@ -148,7 +154,7 @@ class ReinforcementProblem:
             reward = 0
         elif self.game.lastPacmanMove == 'hitGhost':
             self.game.lastPacmanMove = None
-            reward = -20
+            reward = -40
         elif self.game.lastPacmanMove == 'atePellet':
             self.game.lastPacmanMove = None
             reward = 20
@@ -158,9 +164,17 @@ class ReinforcementProblem:
         elif self.game.lastPacmanMove == 'ateGhost':
             self.game.lastPacmanMove = None
             reward = 40.0     
+        if state.nearestDangerGhost < 6000:
+            distance_difference = 6000 - state.nearestDangerGhost
+            penalty = (distance_difference // 1000) * 5
+            reward -= penalty
+            if state.playerDir*-1==state.nearestDangerGhostDir:
+                reward-=100
+
         # TODO: Adjust the reward function to make it learn better
         # reward = self.game.score - previousScore
         if reward != 0:
+            print('state', state)
             print('reward', reward)
         newState = self.getCurrentState()
         # print('new state', newState)
@@ -247,4 +261,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 100000, 0.7, 0.75, 0.4, 0.01)
+    QLearning(problem, 100000, 0.7, 0.75, 0.4, 0.005)
