@@ -84,7 +84,7 @@ class Entity(object):
 
     def validDirections(self):
         directions = []
-        for key in [UP, DOWN, LEFT, RIGHT, STOP]:
+        for key in [UP, DOWN, LEFT, RIGHT]:
             if self.validDirection(key):
                 if key != self.direction * -1:
                     directions.append(key)
