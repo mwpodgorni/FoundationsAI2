@@ -9,7 +9,7 @@ import pickle
 import random
 
 import pygame
-import time
+
 
 from vector import Vector2
 from run import GameController
@@ -17,25 +17,14 @@ from constants import UP, DOWN, RIGHT, LEFT
 
 
 class State:
-    def __init__(self, playerPosition: tuple, playerDir:str,  pellets: list[tuple], powerPellets: list[tuple],
-                  nearestDangerGhost: float, ghostDirection:str, scaredGhosts: list[tuple]) -> None:
+    def __init__(self, playerPosition: Vector2) -> None:
         # TODO: Add more variables in the state so that the agent can account for more things in its environment
         # examples: (ghosts,)
         # warning: The more variables you add, the more space it will have search and it will take more time to train
-        # print('inti state', playerPosition, pellets, powerPellets, dangerGhosts)
-        self.playerPosition = playerPosition
-        self.playerDir = playerDir
-        self.pellets = pellets
-        self.powerPellets = powerPellets
-        self.nearestDangerGhost = nearestDangerGhost
-        self.nearestDangerGhostDir = ghostDirection
-        self.scaredGhosts = scaredGhosts
+        self.playerPosition = playerPosition.asTuple()
 
     def __str__(self) -> str:
-        return "{}.{}.{}".format(self.nearestDangerGhost,self.playerDir, self.nearestDangerGhostDir) 
-        # return "{}.{} | {} | {}.{}.{}".format(self.playerPosition[0], self.playerPosition[1], 
-        #                                             self.nearestDangerGhost,
-        #                                             len(self.pellets), len(self.powerPellets), len(self.scaredGhosts))
+        return "{}.{}".format(self.playerPosition[0], self.playerPosition[1])
 
 
 class Action(IntEnum):
@@ -96,9 +85,7 @@ class ReinforcementProblem:
         self.game.restartGameRandom()
 
     def getCurrentState(self) -> State:
-        # return State(self.game.pacman.position)
-        return State(self.game.pacmanPosition(), self.game.pacman.direction, self.game.getPellets(), self.game.getPowerPellets(), 
-                     self.game.nearestDangerGhost(), self.game.nearestDangerGhostDir(), self.game.scaredGhosts())
+        return State(self.game.pacman.position)
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
@@ -109,8 +96,6 @@ class ReinforcementProblem:
     def getAvailableActions(self, state: State) -> list[Action]:
         directions = self.game.pacman.validDirections()
 
-        if self.game.pacman.direction*-1 not in directions:
-            directions.append(self.game.pacman.direction*-1)
         def intDirectionToString(dir: Action) -> str:
             match dir:
                 case Action.UP:
@@ -142,42 +127,12 @@ class ReinforcementProblem:
     # Take the given action and state, and return
     # a pair consisting of the reward and the new state.
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
-        # print('takeAction')
         previousScore = self.game.score
         self.game.pacman.learntDirection = action
         self.updateGameForSeconds(0.1)
-        reward = 0
-        if self.game.lastPacmanMove != 'justMove':
-            print('lastPacmanMove', self.game.lastPacmanMove)
-        if self.game.lastPacmanMove == 'justMove':
-            self.game.lastPacmanMove = None
-            reward = 0
-        elif self.game.lastPacmanMove == 'hitGhost':
-            self.game.lastPacmanMove = None
-            reward = -40
-        elif self.game.lastPacmanMove == 'atePellet':
-            self.game.lastPacmanMove = None
-            reward = 20
-        elif self.game.lastPacmanMove == 'atePowerPellet':
-            self.game.lastPacmanMove = None
-            reward = 30.0 
-        elif self.game.lastPacmanMove == 'ateGhost':
-            self.game.lastPacmanMove = None
-            reward = 40.0     
-        if state.nearestDangerGhost < 6000:
-            distance_difference = 6000 - state.nearestDangerGhost
-            penalty = (distance_difference // 1000) * 5
-            reward -= penalty
-            if state.playerDir*-1==state.nearestDangerGhostDir:
-                reward-=100
-
         # TODO: Adjust the reward function to make it learn better
-        # reward = self.game.score - previousScore
-        if reward != 0:
-            print('state', state)
-            print('reward', reward)
+        reward = self.game.score - previousScore
         newState = self.getCurrentState()
-        # print('new state', newState)
         return reward, newState
 
     # PARAMETERS:
@@ -206,15 +161,8 @@ def QLearning(
     # Get a starting state.
     state = problem.getRandomState()
     saveIterations = 50
-    i=0
-    while i < iterations:
-    # for i in range(iterations):
-        # print('pause', problem.game.pause.paused)
-        if problem.game.pause.paused:
-            # print("game is paused. Waiting..")
-            time.sleep(1)          
-            problem.updateGameForSeconds(0.1)
-            continue  
+    # Repeat a number of times.
+    for i in range(iterations):
         if i % saveIterations == 0:
             print("Saving at iteration:", i)
             store.save()
@@ -252,8 +200,7 @@ def QLearning(
 
         # And update the state.
         state = newState
-        i += 1
-    print('end while loop')
+
 
 if __name__ == "__main__":
     # The store for Q-values, we use this to make decisions based on
@@ -261,4 +208,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 100000, 0.7, 0.75, 0, 0)
+    QLearning(problem, 10000, 0.7, 0.75, 0.2, 0.01)
