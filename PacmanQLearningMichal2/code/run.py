@@ -29,7 +29,8 @@ from text import TextGroup
 from sprites import LifeSprites
 from sprites import MazeSprites
 from mazedata import MazeData
-
+from constants import *
+from random import choice
 
 class GameController(object):
     def __init__(self):
@@ -325,7 +326,7 @@ class GameController(object):
 
     def render(self):
         self.screen.blit(self.background, (0, 0))
-        # self.nodes.render(self.screen)
+        self.nodes.render(self.screen)
         self.pellets.render(self.screen)
         if self.fruit is not None:
             self.fruit.render(self.screen)
@@ -345,6 +346,69 @@ class GameController(object):
 
         pygame.display.update()
 
+
+    # defined by me
+    def pacmanPosition(self):
+        return (int(self.pacman.node.position.x), int(self.pacman.node.position.y))
+
+    def nodesLeft(self):
+        return self.getNeighbourNodes(LEFT)
+
+    def nodesRight(self):
+        return self.getNeighbourNodes(RIGHT)
+
+    def nodesUp(self):
+        return self.getNeighbourNodes(UP)
+
+    def nodesDown(self):
+        return self.getNeighbourNodes(DOWN)
+
+    def getNeighbourNodes(self, direction):
+        nodes = []
+        currentNode = self.pacman.node
+        lastDirection = STOP
+        for i in range(5):
+            if currentNode.neighbors[direction] is not None:
+                nodes.append(currentNode.neighbors[direction])
+                currentNode = currentNode.neighbors[direction]
+                lastDirection=direction
+            else:
+                lastDirection, anyNeighbour = self.getAnyNeighbour(currentNode)
+                nodes.append(anyNeighbour)
+                currentNode = anyNeighbour
+        return nodes
+
+    def getAnyNeighbour(self, node, exludeDirection):
+        for direction in [UP, DOWN, LEFT, RIGHT]:
+            if direction != exludeDirection * -1 and node.neighbors[direction] is not None:
+                return direction, node.neighbors[direction]
+
+    def getPelletDirection(self):
+        print('getPelletDirection')
+        return self.pacman.direction
+
+    def goalDirectionDij(self, directions):
+        path = self.getDijkstraPath(directions)
+        print(path)
+        pacmanTarget = self.target
+        pacmanTarget = self.nodes.getPixelsFromNode(pacmanTarget)
+        path.append(pacmanTarget)
+        nextGhostNode = path[1]
+        if pacmanTarget[0] > nextGhostNode[0] and 2 in directions : #left
+            return 2
+        if pacmanTarget[0] < nextGhostNode[0] and -2 in directions : #right
+            return -2
+        if pacmanTarget[1] > nextGhostNode[1] and 1 in directions : #up
+            return 1
+        if pacmanTarget[1] < nextGhostNode[1] and -1 in directions : #down
+            return -1
+        else:
+            print(self.ghost.direction)
+            print(directions)
+            if -1 * self.ghost.direction in directions:
+                return -1 * self.ghost.direction
+            else:
+                return choice(directions)
 
 if __name__ == "__main__":
     game = GameController()

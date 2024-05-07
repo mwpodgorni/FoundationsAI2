@@ -9,22 +9,27 @@ import pickle
 import random
 
 import pygame
-
+import time
 
 from vector import Vector2
 from run import GameController
-from constants import UP, DOWN, RIGHT, LEFT
+from constants import *
 
 
 class State:
-    def __init__(self, playerPosition: Vector2) -> None:
+    def __init__(self, playerPosition, nodesLeft, nodesRight, nodesUp, nodesDown, pelletDirection) -> None:
         # TODO: Add more variables in the state so that the agent can account for more things in its environment
         # examples: (ghosts,)
         # warning: The more variables you add, the more space it will have search and it will take more time to train
-        self.playerPosition = playerPosition.asTuple()
+        self.playerPosition = playerPosition
+        self.nodesLeft = nodesLeft
+        self.nodesRight =  nodesRight
+        self.nodesUp = nodesUp
+        self.nodesDown = nodesDown
+        self.pelletDirection = pelletDirection
 
     def __str__(self) -> str:
-        return "{}.{}".format(self.playerPosition[0], self.playerPosition[1])
+        return "{}.{} | {}.{}.{}.{}".format(self.playerPosition[0], self.playerPosition[1], self.nodesLeft, self.nodesRight, self.nodesUp, self.nodesDown)
 
 
 class Action(IntEnum):
@@ -85,7 +90,9 @@ class ReinforcementProblem:
         self.game.restartGameRandom()
 
     def getCurrentState(self) -> State:
-        return State(self.game.pacman.position)
+        return State(self.game.pacmanPosition(), self.game.nodesLeft(),
+                     self.game.nodesRight(), self.game.nodesUp(),
+                     self.game.nodesDown(), self.game.getPelletDirection())
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
@@ -162,7 +169,13 @@ def QLearning(
     state = problem.getRandomState()
     saveIterations = 50
     # Repeat a number of times.
-    for i in range(iterations):
+    i = 0
+    while i < iterations:
+        if problem.game.pause.paused:
+            # print("game is paused. Waiting..")
+            time.sleep(1)
+            problem.updateGameForSeconds(0.1)
+            continue
         if i % saveIterations == 0:
             print("Saving at iteration:", i)
             store.save()
@@ -200,6 +213,7 @@ def QLearning(
 
         # And update the state.
         state = newState
+        i += 1
 
 
 if __name__ == "__main__":

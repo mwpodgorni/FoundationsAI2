@@ -46,20 +46,33 @@ class Node(object):
                 line_start = self.position.asTuple()
                 line_end = self.neighbors[n].position.asTuple()  # type:ignore
                 pygame.draw.line(screen, WHITE, line_start, line_end, 4)
-                pygame.draw.circle(screen, RED, self.position.asInt(), 12)
+                pygame.draw.circle(screen, RED, self.position.asInt(), 6)
 
 
 class NodeGroup(object):
     def __init__(self, level):
         self.level = level
         self.nodesLUT = {}
-        self.nodeSymbols = ["+", "P", "n"]
+        self.nodeSymbols = ["+", "P", "n", "."]
         self.pathSymbols = [".", "-", "|", "p"]
         data = self.readMazeFile(level)
         self.createNodeTable(data)
         self.connectHorizontally(data)
         self.connectVertically(data)
         self.homekey = None
+
+        # returns neighbors in (x,y) format
+    def getNeighbors(self, node):
+        neighs_LUT = self.getNeighborsObj(node)
+        vals = neighs_LUT.values()
+        neighs_LUT2 = []
+        for direction in vals:
+            if not direction is None:
+                neighs_LUT2.append(direction)
+        list_neighs = []
+        for neigh in neighs_LUT2:
+            list_neighs.append(self.getVectorFromLUTNode(neigh))
+        return list_neighs
 
     def readMazeFile(self, textfile):
         return np.loadtxt(textfile, dtype="<U1")

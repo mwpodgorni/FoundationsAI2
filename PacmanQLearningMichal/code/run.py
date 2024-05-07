@@ -373,7 +373,7 @@ class GameController(object):
             if abs(p.position.x - pacman_node[0]) <= self.range_limit * TILEWIDTH and abs( p.position.y - pacman_node[1]) <= self.range_limit * TILEHEIGHT:
                 powerPellets.append((p.position.x, p.position.y))
         return powerPellets
-    
+
     def nearestDangerGhost(self):
         # pacman_node = self.pacman.node.position
         # pacman_node = (pacman_node.x, pacman_node.y)
@@ -393,10 +393,10 @@ class GameController(object):
         return self.getNearestGhostDir([SCATTER, CHASE])
     def dangerGhosts(self):
         return self.getGhostsTargets([SCATTER, CHASE])
-    
+
     def scaredGhosts(self):
         return self.getGhostsTargets([FREIGHT])
-    
+
     def getGhostsTargets(self, states):
         ghosts = []
         pacman_node = self.pacman.node.position
@@ -407,7 +407,7 @@ class GameController(object):
                 if abs(g_node.x - pacman_node[0]) <= self.range_limit * TILEWIDTH and abs( g_node.y - pacman_node[1]) <= self.range_limit * TILEHEIGHT:
                     ghosts.append((int(ghost.node.position.x), int(ghost.node.position.y)))
         return ghosts
-    
+
     def getNearestGhostDist(self, states):
         smallest_distance = float('inf')
         nearest_ghost = None
@@ -418,7 +418,7 @@ class GameController(object):
                 nearest_ghost = ghost
         # return nearest_ghost
         return round(smallest_distance) if smallest_distance!=float('inf') else smallest_distance
-    
+
     def getNearestGhostDir(self, states):
         smallest_distance = float('inf')
         nearest_ghost = None
@@ -430,7 +430,10 @@ class GameController(object):
         if nearest_ghost is None:
             return None
         return nearest_ghost.direction
-    
+
+
+
+
 if __name__ == "__main__":
     game = GameController()
     game.startGame()
