@@ -17,19 +17,19 @@ from constants import *
 
 
 class State:
-    def __init__(self, playerPosition, nodesLeft, nodesRight, nodesUp, nodesDown, pelletDirection) -> None:
+    def __init__(self, playerPosition, leftSafe, rightSafe, upSafe, downSafe, pelletDirection) -> None:
         # TODO: Add more variables in the state so that the agent can account for more things in its environment
         # examples: (ghosts,)
         # warning: The more variables you add, the more space it will have search and it will take more time to train
         self.playerPosition = playerPosition
-        self.nodesLeft = nodesLeft
-        self.nodesRight =  nodesRight
-        self.nodesUp = nodesUp
-        self.nodesDown = nodesDown
+        self.leftSafe = leftSafe
+        self.rightSafe =  rightSafe
+        self.upSafe = upSafe
+        self.downSafe = downSafe
         self.pelletDirection = pelletDirection
 
     def __str__(self) -> str:
-        return "{}.{} | {}.{}.{}.{}".format(self.playerPosition[0], self.playerPosition[1], self.nodesLeft, self.nodesRight, self.nodesUp, self.nodesDown)
+        return "Pacmn x/y: {}/{} | L:{} | R:{} | U:{} | D:{} | DIR: {}".format(self.playerPosition[0], self.playerPosition[1], self.leftSafe, self.rightSafe, self.upSafe, self.downSafe, self.pelletDirection)
 
 
 class Action(IntEnum):
@@ -90,9 +90,9 @@ class ReinforcementProblem:
         self.game.restartGameRandom()
 
     def getCurrentState(self) -> State:
-        return State(self.game.pacmanPosition(), self.game.nodesLeft(),
-                     self.game.nodesRight(), self.game.nodesUp(),
-                     self.game.nodesDown(), self.game.getPelletDirection())
+        return State(self.game.pacmanPosition(), self.game.leftSafe(),
+                     self.game.rightSafe(), self.game.upSafe(),
+                     self.game.downSafe(), self.game.getPelletDirection())
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
@@ -134,11 +134,27 @@ class ReinforcementProblem:
     # Take the given action and state, and return
     # a pair consisting of the reward and the new state.
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
+        print('--------------------')
+        print('takeAction:', state)
         previousScore = self.game.score
         self.game.pacman.learntDirection = action
-        self.updateGameForSeconds(0.1)
+        self.updateGameForSeconds(0.05)
         # TODO: Adjust the reward function to make it learn better
-        reward = self.game.score - previousScore
+        reward = 0
+        if action == state.pelletDirection:
+            reward = 10
+
+  
+        if action == LEFT and state.leftSafe == False:
+            reward -=  20  
+        elif action == RIGHT and state.rightSafe == False:
+            reward -= 20
+        elif action == UP and state.upSafe==False:
+            reward -= 20 
+        elif action == DOWN and state.downSafe==False:
+            reward -= 20
+        print('reward:', reward)
+        # reward = self.game.score - previousScore
         newState = self.getCurrentState()
         return reward, newState
 
@@ -174,7 +190,7 @@ def QLearning(
         if problem.game.pause.paused:
             # print("game is paused. Waiting..")
             time.sleep(1)
-            problem.updateGameForSeconds(0.1)
+            problem.updateGameForSeconds(0.05)
             continue
         if i % saveIterations == 0:
             print("Saving at iteration:", i)

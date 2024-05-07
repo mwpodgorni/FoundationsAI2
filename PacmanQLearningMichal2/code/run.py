@@ -31,6 +31,7 @@ from sprites import MazeSprites
 from mazedata import MazeData
 from constants import *
 from random import choice
+from algorithms import dijkstra_or_a_star
 
 class GameController(object):
     def __init__(self):
@@ -143,7 +144,8 @@ class GameController(object):
     def update(self):
         TIMESCALE = 2.0
 
-        dt = self.clock.tick(60) / 1000.0 * TIMESCALE
+        dt = self.clock.tick(30) / 1000.0
+        # dt = self.clock.tick(60) / 1000.0 * TIMESCALE
         self.textgroup.update(dt)
         self.pellets.update(dt)
         if not self.pause.paused:
@@ -326,7 +328,7 @@ class GameController(object):
 
     def render(self):
         self.screen.blit(self.background, (0, 0))
-        self.nodes.render(self.screen)
+        # self.nodes.render(self.screen)
         self.pellets.render(self.screen)
         if self.fruit is not None:
             self.fruit.render(self.screen)
@@ -351,65 +353,110 @@ class GameController(object):
     def pacmanPosition(self):
         return (int(self.pacman.node.position.x), int(self.pacman.node.position.y))
 
-    def nodesLeft(self):
-        return self.getNeighbourNodes(LEFT)
+    def leftSafe(self):
+        return self.getNodesSafe(LEFT)
+    def rightSafe(self):
+        return self.getNodesSafe(RIGHT)
+    def upSafe(self):
+        return self.getNodesSafe(UP)
+    def downSafe(self):
+        return self.getNodesSafe(DOWN)
 
-    def nodesRight(self):
-        return self.getNeighbourNodes(RIGHT)
-
-    def nodesUp(self):
-        return self.getNeighbourNodes(UP)
-
-    def nodesDown(self):
-        return self.getNeighbourNodes(DOWN)
-
-    def getNeighbourNodes(self, direction):
+    def getNodesSafe(self, direction):
         nodes = []
         currentNode = self.pacman.node
         lastDirection = STOP
-        for i in range(5):
+        ghostNodes = [(g.target.position.x, g.target.position.y) for g in self.ghosts]
+        for i in range(6):
             if currentNode.neighbors[direction] is not None:
-                nodes.append(currentNode.neighbors[direction])
                 currentNode = currentNode.neighbors[direction]
-                lastDirection=direction
+                # lastDirection=direction
+                nodeTuple = (currentNode.position.x, currentNode.position.y)
+                if nodeTuple in ghostNodes:
+                    nodes.append(-1)
+                else:
+                    nodes.append(0)
             else:
-                lastDirection, anyNeighbour = self.getAnyNeighbour(currentNode)
-                nodes.append(anyNeighbour)
-                currentNode = anyNeighbour
-        return nodes
+                return -1 not in nodes
+                
+            # elif i == 0:
+            #     return []
+            # else:
+            #     lastDirection, anyNeighbour = self.getAnyNeighbour(currentNode, lastDirection)
+            #     currentNode = anyNeighbour
+            # nodeTuple = (currentNode.position.x, currentNode.position.y)
+            # if nodeTuple in ghostNodes:
+            #     nodes.append(-1)
+            # else:
+            #     nodes.append(0)
+            # nodes.append((currentNode.position.x, currentNode.position.y))
+        return -1 not in nodes
 
     def getAnyNeighbour(self, node, exludeDirection):
         for direction in [UP, DOWN, LEFT, RIGHT]:
             if direction != exludeDirection * -1 and node.neighbors[direction] is not None:
                 return direction, node.neighbors[direction]
+        if node.neighbors[PORTAL] is not None:
+            return exludeDirection, node.neighbors[PORTAL]
+        print("PROBLEM", node.neighbors, exludeDirection)
 
     def getPelletDirection(self):
-        print('getPelletDirection')
-        return self.pacman.direction
+        self.goal = self.getNewNearestPellet()
+        return self.goalDirectionDij(self.pacman.validDirections())
 
     def goalDirectionDij(self, directions):
         path = self.getDijkstraPath(directions)
-        print(path)
-        pacmanTarget = self.target
-        pacmanTarget = self.nodes.getPixelsFromNode(pacmanTarget)
+        pacmanTarget = self.pacman.target
+        pacmanTarget = self.nodes.getVectorFromLUTNode(pacmanTarget)
         path.append(pacmanTarget)
-        nextGhostNode = path[1]
-        if pacmanTarget[0] > nextGhostNode[0] and 2 in directions : #left
+        if len(path) == 1:
+            return choice(directions)
+        nextPacmanNode = path[1]
+        if pacmanTarget[0] > nextPacmanNode[0] and 2 in directions : #left
             return 2
-        if pacmanTarget[0] < nextGhostNode[0] and -2 in directions : #right
+        if pacmanTarget[0] < nextPacmanNode[0] and -2 in directions : #right
             return -2
-        if pacmanTarget[1] > nextGhostNode[1] and 1 in directions : #up
+        if pacmanTarget[1] > nextPacmanNode[1] and 1 in directions : #up
             return 1
-        if pacmanTarget[1] < nextGhostNode[1] and -1 in directions : #down
+        if pacmanTarget[1] < nextPacmanNode[1] and -1 in directions : #down
             return -1
         else:
-            print(self.ghost.direction)
-            print(directions)
-            if -1 * self.ghost.direction in directions:
-                return -1 * self.ghost.direction
+            if -1 * self.pacman.direction in directions:
+                return -1 * self.pacman.direction
             else:
                 return choice(directions)
+    
+    def getDijkstraPath(self, directions):
+        lastPacmanNode = (self.goal.x, self.goal.y)
+        pacmanTarget = self.pacman.target
+        pacmanTarget = self.nodes.getVectorFromLUTNode(pacmanTarget)
 
+        # previous_nodes, shortest_path = dijkstra(self.nodes, ghostTarget)
+        previous_nodes, shortest_path = dijkstra_or_a_star(self.nodes, pacmanTarget, a_star=True)
+        path = []
+        node = lastPacmanNode
+        while node != pacmanTarget:
+            path.append(node)
+            if node in previous_nodes:
+                node = previous_nodes[node]
+            else:
+                break
+        path.append(pacmanTarget)
+        path.reverse()
+        return path
+    
+    def getNewNearestPellet(self):
+        nearest_pellet = None
+        nearest_distance_squared = float('inf')
+        pacman_position = self.pacman.position
+        for pellet in self.pellets.pelletList:
+            pellet_position = pellet.position
+            distance_squared = (pellet_position - pacman_position).magnitudeSquared()
+            if distance_squared < nearest_distance_squared:
+                nearest_distance_squared = distance_squared
+                nearest_pellet = pellet
+        return nearest_pellet.position
+    
 if __name__ == "__main__":
     game = GameController()
     game.startGame()
