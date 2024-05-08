@@ -238,4 +238,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 10000, 0.7, 0.75, 0.2, 0.01)
+    QLearning(problem, 100000, 0.7, 0.75, 0.1, 0)

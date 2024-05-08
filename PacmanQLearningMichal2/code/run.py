@@ -144,8 +144,8 @@ class GameController(object):
     def update(self):
         TIMESCALE = 2.0
 
-        dt = self.clock.tick(30) / 1000.0
-        # dt = self.clock.tick(60) / 1000.0 * TIMESCALE
+        # dt = self.clock.tick(30) / 1000.0
+        dt = self.clock.tick(60) / 1000.0 * TIMESCALE
         self.textgroup.update(dt)
         self.pellets.update(dt)
         if not self.pause.paused:
