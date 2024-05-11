@@ -169,8 +169,9 @@ class NodeGroup(object):
             distance = (x.position - position).magnitude()
             return distance > radius
 
-        filter(filterNodes, self.nodesLUT.values())
-        return random.choice(list(self.nodesLUT.values()))
+        filtered_nodes = filter(filterNodes, self.nodesLUT.values())
+        filtered_list = list(filtered_nodes)
+        return random.choice(filtered_list)
 
     def denyAccess(self, col, row, direction, entity):
         node = self.getNodeFromTiles(col, row)

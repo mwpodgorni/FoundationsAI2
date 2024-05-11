@@ -20,6 +20,8 @@ class Pacman(Entity):
         self.alive = True
         self.sprites = PacmanSprites(self)
         self.learntDirection = LEFT
+        self.lastNode = node
+
 
     def reset(self):
         Entity.reset(self)
@@ -34,27 +36,36 @@ class Pacman(Entity):
         self.direction = STOP
 
     def update(self, dt):
+        print("UDPATRE PACMAN", self.position.x, self.position.y)
         self.sprites.update(dt)
+
         self.position += self.directions[self.direction] * self.speed * dt
-        direction = int(self.learntDirection)
         if self.overshotTarget():
+            print('OVRESHOT TARGET')
+            # print("LEARNT DIRECTION", self.learntDirection)
+            # print("self.direction", self.direction)
             self.node = self.target
+            direction = self.learntDirection
             if self.node.neighbors[PORTAL] is not None:
                 self.node = self.node.neighbors[PORTAL]
             self.target = self.getNewTarget(direction)
+            # print('TARGET', self.target.position.x, self.target.position.y)
+            # print('NODE', self.node.position.x, self.node.position.y)
             if self.target is not self.node:
+                # print("SETTING DIRECTION", direction)
                 self.direction = direction
             else:
                 self.target = self.getNewTarget(self.direction)
-
-            if self.target is self.node:
-                self.direction = STOP
             self.setPosition()
-
-        else:
-            if self.oppositeDirection(direction):
-                self.reverseDirection()
-    
+        # else:
+        #     if self.oppositeDirection(direction):
+        #         self.reverseDirection()
+    def getNewTarget(self, direction):
+        if self.validDirection(direction):
+            # print('new target if')
+            return self.node.neighbors[direction]
+        # print('new target else')
+        return self.node
     def validDirections(self):
         directions = []
         for key in [UP, DOWN, LEFT, RIGHT]:

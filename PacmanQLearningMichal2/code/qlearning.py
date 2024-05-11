@@ -102,7 +102,14 @@ class ReinforcementProblem:
     # Get the available actions for the given state.
     def getAvailableActions(self, state: State) -> list[Action]:
         directions = self.game.pacman.validDirections()
-
+        if self.game.pacman.direction == LEFT and not state.leftSafe:
+            directions.append(self.game.pacman.direction*-1)
+        elif self.game.pacman.direction == RIGHT and not state.rightSafe:
+            directions.append(self.game.pacman.direction*-1)
+        elif self.game.pacman.direction == UP and not state.upSafe:
+            directions.append(self.game.pacman.direction*-1)
+        elif self.game.pacman.direction == DOWN and not state.downSafe:
+            directions.append(self.game.pacman.direction*-1)
         def intDirectionToString(dir: Action) -> str:
             match dir:
                 case Action.UP:
@@ -116,7 +123,7 @@ class ReinforcementProblem:
                 case _:
                     return "INV"
 
-        # print(list(map(intDirectionToString, directions)))
+        # print('directions:',list(map(intDirectionToString, directions)))
         return directions
 
     def updateGameNTimes(self, frames: int):
@@ -134,15 +141,25 @@ class ReinforcementProblem:
     # Take the given action and state, and return
     # a pair consisting of the reward and the new state.
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
-        print('--------------------')
         print('takeAction:', state)
-        previousScore = self.game.score
+        # previousScore = self.game.score
+        previousPelletCount = self.game.pellets.pelletList.__len__()
+        # self.game.pacman.direction = action
         self.game.pacman.learntDirection = action
-        self.updateGameForSeconds(0.05)
+        # if self.game.pacman.node.neighbors[action] is not None:
+            # self.game.pacman.target = self.game.pacman.node.neighbors[action]
+        # if(self.game.pacman.direction == action*-1):
+        #     self.game.pacman.node = self.game.pacman.lastNode
+        #     self.game.pacman.target = self.game.pacman.lastNode.neighbors[action]
         # TODO: Adjust the reward function to make it learn better
+        problem.updateGameForSeconds(0.1)
+        # problem.updateGameNTimes(1)
+        pelletCount = self.game.pellets.pelletList.__len__()
         reward = 0
+        if pelletCount<previousPelletCount:
+            reward += 5
         if action == state.pelletDirection:
-            reward = 10
+            reward +=10
 
   
         if action == LEFT and state.leftSafe == False:
@@ -153,7 +170,7 @@ class ReinforcementProblem:
             reward -= 20 
         elif action == DOWN and state.downSafe==False:
             reward -= 20
-        print('reward:', reward)
+        # print('reward:', reward)
         # reward = self.game.score - previousScore
         newState = self.getCurrentState()
         return reward, newState
@@ -187,10 +204,11 @@ def QLearning(
     # Repeat a number of times.
     i = 0
     while i < iterations:
+        print('--------------------', i)
         if problem.game.pause.paused:
             # print("game is paused. Waiting..")
             time.sleep(1)
-            problem.updateGameForSeconds(0.05)
+            problem.updateGameNTimes(1)
             continue
         if i % saveIterations == 0:
             print("Saving at iteration:", i)
@@ -201,16 +219,19 @@ def QLearning(
 
         # Get the list of available actions.
         actions = problem.getAvailableActions(state)
+        print('AVAILABLE ACTIONS:', actions)
 
         # Should we use a random action this time?
         if random.uniform(0, 1) < explorationRandomness:
             action = random.choice(actions)
+            print('random choice', action)
         # Otherwise pick the best action.
         else:
             action = store.getBestAction(state, problem.getAvailableActions(state))
 
         # Carry out the action and retrieve the reward and new state.
         reward, newState = problem.takeAction(state, action)
+        # problem.updateGameNTimes(1)
 
         # Get the current q from the store.
         q = store.getQValue(state, action)
@@ -238,4 +259,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 100000, 0.7, 0.75, 0.1, 0)
+    QLearning(problem, 100000, 0.7, 0.75, 0.9, 0)

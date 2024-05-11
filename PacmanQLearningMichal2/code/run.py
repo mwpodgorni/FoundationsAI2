@@ -144,8 +144,8 @@ class GameController(object):
     def update(self):
         TIMESCALE = 2.0
 
-        # dt = self.clock.tick(30) / 1000.0
-        dt = self.clock.tick(60) / 1000.0 * TIMESCALE
+        dt = self.clock.tick(30) / 1000.0
+        # dt = self.clock.tick(60) / 1000.0 * TIMESCALE
         self.textgroup.update(dt)
         self.pellets.update(dt)
         if not self.pause.paused:
@@ -366,7 +366,10 @@ class GameController(object):
         nodes = []
         currentNode = self.pacman.node
         lastDirection = STOP
-        ghostNodes = [(g.target.position.x, g.target.position.y) for g in self.ghosts]
+        ghostNodes = []
+        for g in self.ghosts:
+            if g.mode.current in [SCATTER, CHASE]:
+                ghostNodes.append((g.target.position.x, g.target.position.y))
         for i in range(6):
             if currentNode.neighbors[direction] is not None:
                 currentNode = currentNode.neighbors[direction]
