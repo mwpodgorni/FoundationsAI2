@@ -86,6 +86,7 @@ class QValueStore:
 
 class ReinforcementProblem:
     def __init__(self) -> None:
+        self.clock = pygame.time.Clock()
         self.game = GameController()
         self.game.restartGameRandom()
 
@@ -123,12 +124,25 @@ class ReinforcementProblem:
                 case _:
                     return "INV"
 
-        # print('directions:',list(map(intDirectionToString, directions)))
+        # print('AVAILABLE ACTIONS:',list(map(intDirectionToString, directions)))
+        return directions
+    
+    def getAvailableTargetActions(self, state: State) -> list[Action]:
+        directions = self.game.pacman.validTargetDirections()
+        if self.game.pacman.direction == LEFT and not state.leftSafe:
+            directions.append(self.game.pacman.direction*-1)
+        elif self.game.pacman.direction == RIGHT and not state.rightSafe:
+            directions.append(self.game.pacman.direction*-1)
+        elif self.game.pacman.direction == UP and not state.upSafe:
+            directions.append(self.game.pacman.direction*-1)
+        elif self.game.pacman.direction == DOWN and not state.downSafe:
+            directions.append(self.game.pacman.direction*-1)
         return directions
 
     def updateGameNTimes(self, frames: int):
         for i in range(frames):
-            self.game.update()
+            dt = self.clock.tick(30) / 1000.0
+            self.game.update(dt)
 
     def updateGameForSeconds(self, seconds: float):
         durationMills: float = seconds * 1000
@@ -143,16 +157,19 @@ class ReinforcementProblem:
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
         print('takeAction:', state)
         # previousScore = self.game.score
+        
+        self.game.pacman.learntDirection = action
+        problem.updateGameNTimes(1)
         previousPelletCount = self.game.pellets.pelletList.__len__()
         # self.game.pacman.direction = action
-        self.game.pacman.learntDirection = action
+        print('assign direction:', action)
         # if self.game.pacman.node.neighbors[action] is not None:
-            # self.game.pacman.target = self.game.pacman.node.neighbors[action]
+        #     self.game.pacman.target = self.game.pacman.node.neighbors[action]
         # if(self.game.pacman.direction == action*-1):
         #     self.game.pacman.node = self.game.pacman.lastNode
         #     self.game.pacman.target = self.game.pacman.lastNode.neighbors[action]
         # TODO: Adjust the reward function to make it learn better
-        problem.updateGameForSeconds(0.1)
+        # problem.updateGameForSeconds(0.1)
         # problem.updateGameNTimes(1)
         pelletCount = self.game.pellets.pelletList.__len__()
         reward = 0
@@ -166,14 +183,18 @@ class ReinforcementProblem:
             reward -=  20  
         elif action == RIGHT and state.rightSafe == False:
             reward -= 20
-        elif action == UP and state.upSafe==False:
+        elif action == UP and state.upSafe == False:
             reward -= 20 
-        elif action == DOWN and state.downSafe==False:
+        elif action == DOWN and state.downSafe == False:
             reward -= 20
         # print('reward:', reward)
         # reward = self.game.score - previousScore
         newState = self.getCurrentState()
         return reward, newState
+    
+    def willOvershootNext(self):
+        dt = self.clock.tick(30) / 1000.0
+        return self.game.pacman.willOvershootTarget(dt)
 
     # PARAMETERS:
     # Learning Rate
@@ -214,12 +235,44 @@ def QLearning(
             print("Saving at iteration:", i)
             store.save()
         # Pick a new state every once in a while.
-        if random.uniform(0, 1) < walkLength:
-            state = problem.getRandomState()
+        # if random.uniform(0, 1) < walkLength:
+        #     state = problem.getRandomState()
 
         # Get the list of available actions.
         actions = problem.getAvailableActions(state)
-        print('AVAILABLE ACTIONS:', actions)
+        if problem.willOvershootNext() is True:
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            print("IFFFFFFFFFFFFFFFF")
+            actions = problem.getAvailableTargetActions(state)
+        def intDirectionToString(dir: Action) -> str:
+            match dir:
+                case Action.UP:
+                    return "UP"
+                case Action.DOWN:
+                    return "DOWN"
+                case Action.LEFT:
+                    return "LEFT"
+                case Action.RIGHT:
+                    return "RIGHT"
+                case _:
+                    return "INV"
+
+        print('AVAILABLE ACTIONS:',list(map(intDirectionToString, actions)))
+        # print('AVAILABLE ACTIONS:', actions)
 
         # Should we use a random action this time?
         if random.uniform(0, 1) < explorationRandomness:
@@ -227,7 +280,7 @@ def QLearning(
             print('random choice', action)
         # Otherwise pick the best action.
         else:
-            action = store.getBestAction(state, problem.getAvailableActions(state))
+            action = store.getBestAction(state, actions)
 
         # Carry out the action and retrieve the reward and new state.
         reward, newState = problem.takeAction(state, action)

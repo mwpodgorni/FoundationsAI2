@@ -20,7 +20,6 @@ class Pacman(Entity):
         self.alive = True
         self.sprites = PacmanSprites(self)
         self.learntDirection = LEFT
-        self.lastNode = node
 
 
     def reset(self):
@@ -34,6 +33,11 @@ class Pacman(Entity):
     def die(self):
         self.alive = False
         self.direction = STOP
+    
+    
+    def preUpdate(self):
+        return self.overshotTarget()    
+
 
     def update(self, dt):
         print("UDPATRE PACMAN", self.position.x, self.position.y)
@@ -42,15 +46,17 @@ class Pacman(Entity):
         self.position += self.directions[self.direction] * self.speed * dt
         if self.overshotTarget():
             print('OVRESHOT TARGET')
-            # print("LEARNT DIRECTION", self.learntDirection)
+            print("LEARNT DIRECTION", self.learntDirection)
             # print("self.direction", self.direction)
+            # if self.lastOvershotTarget is not None:
+            #     self.node = self.lastOvershotTarget
+            # self.direction = STOP
+            # return
             self.node = self.target
             direction = self.learntDirection
             if self.node.neighbors[PORTAL] is not None:
                 self.node = self.node.neighbors[PORTAL]
             self.target = self.getNewTarget(direction)
-            # print('TARGET', self.target.position.x, self.target.position.y)
-            # print('NODE', self.node.position.x, self.node.position.y)
             if self.target is not self.node:
                 # print("SETTING DIRECTION", direction)
                 self.direction = direction
@@ -60,12 +66,24 @@ class Pacman(Entity):
         # else:
         #     if self.oppositeDirection(direction):
         #         self.reverseDirection()
+
+    def willOvershootTarget(self, dt):
+        tempPosition =self.position+ self.directions[self.direction] * self.speed * dt
+        if self.target is not None:
+            vec1 = self.target.position - self.node.position
+            vec2 = tempPosition - self.node.position
+            node2Target = vec1.magnitudeSquared()
+            node2Self = vec2.magnitudeSquared()
+            return node2Self >= node2Target
+        return False
+
     def getNewTarget(self, direction):
         if self.validDirection(direction):
             # print('new target if')
             return self.node.neighbors[direction]
         # print('new target else')
         return self.node
+    
     def validDirections(self):
         directions = []
         for key in [UP, DOWN, LEFT, RIGHT]:
@@ -75,7 +93,24 @@ class Pacman(Entity):
         if len(directions) == 0:
             directions.append(self.direction * -1)
         return directions
-
+    
+    def validTargetDirections(self):
+        directions = []
+        for key in [UP, DOWN, LEFT, RIGHT]:
+            if self.validTargetDirection(key):
+                if key != self.direction * -1:
+                    directions.append(key)
+        if len(directions) == 0:
+            directions.append(self.direction * -1)
+        return directions
+    
+    def validTargetDirection(self, direction):
+        if direction is not STOP:
+            if self.name in self.target.access[direction]:
+                if self.target.neighbors[direction] is not None:
+                    return True
+        return False
+    
     def getValidKey(self):
         key_pressed = pygame.key.get_pressed()
         if key_pressed[pygame.K_UP]:
