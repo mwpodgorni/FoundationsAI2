@@ -141,10 +141,10 @@ class GameController(object):
         self.ghosts.clyde.startNode.denyAccess(LEFT, self.ghosts.clyde)
         self.mazedata.obj.denyGhostsAccess(self.ghosts, self.nodes)
 
-    def update(self, dt):
+    def update(self):
         TIMESCALE = 2.0
 
-        # dt = self.clock.tick(30) / 1000.0
+        dt = self.clock.tick(30) / 1000.0
         # dt = self.clock.tick(60) / 1000.0 * TIMESCALE
         self.textgroup.update(dt)
         self.pellets.update(dt)
@@ -328,7 +328,7 @@ class GameController(object):
 
     def render(self):
         self.screen.blit(self.background, (0, 0))
-        self.nodes.render(self.screen)
+        # self.nodes.render(self.screen)
         self.pellets.render(self.screen)
         if self.fruit is not None:
             self.fruit.render(self.screen)

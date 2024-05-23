@@ -20,6 +20,7 @@ class Pacman(Entity):
         self.alive = True
         self.sprites = PacmanSprites(self)
         self.learntDirection = LEFT
+        self.lastDt = 0
 
 
     def reset(self):
@@ -42,7 +43,7 @@ class Pacman(Entity):
     def update(self, dt):
         print("UDPATRE PACMAN", self.position.x, self.position.y)
         self.sprites.update(dt)
-
+        self.lastDt = dt
         self.position += self.directions[self.direction] * self.speed * dt
         if self.overshotTarget():
             print('OVRESHOT TARGET')
@@ -67,8 +68,8 @@ class Pacman(Entity):
         #     if self.oppositeDirection(direction):
         #         self.reverseDirection()
 
-    def willOvershootTarget(self, dt):
-        tempPosition =self.position+ self.directions[self.direction] * self.speed * dt
+    def willOvershootTarget(self):
+        tempPosition =self.position+ self.directions[self.direction] * self.speed * self.lastDt
         if self.target is not None:
             vec1 = self.target.position - self.node.position
             vec2 = tempPosition - self.node.position

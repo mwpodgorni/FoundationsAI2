@@ -86,7 +86,6 @@ class QValueStore:
 
 class ReinforcementProblem:
     def __init__(self) -> None:
-        self.clock = pygame.time.Clock()
         self.game = GameController()
         self.game.restartGameRandom()
 
@@ -141,8 +140,7 @@ class ReinforcementProblem:
 
     def updateGameNTimes(self, frames: int):
         for i in range(frames):
-            dt = self.clock.tick(30) / 1000.0
-            self.game.update(dt)
+            self.game.update()
 
     def updateGameForSeconds(self, seconds: float):
         durationMills: float = seconds * 1000
@@ -193,8 +191,7 @@ class ReinforcementProblem:
         return reward, newState
     
     def willOvershootNext(self):
-        dt = self.clock.tick(30) / 1000.0
-        return self.game.pacman.willOvershootTarget(dt)
+        return self.game.pacman.willOvershootTarget()
 
     # PARAMETERS:
     # Learning Rate
