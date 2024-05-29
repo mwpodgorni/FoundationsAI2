@@ -351,7 +351,6 @@ class GameController(object):
     # defined by me
     def pacmanPosition(self):
         return (int(self.pacman.node.position.x), int(self.pacman.node.position.y))
-
     def leftSafe(self):
         return self.getNodesSafe(LEFT)
     def rightSafe(self):

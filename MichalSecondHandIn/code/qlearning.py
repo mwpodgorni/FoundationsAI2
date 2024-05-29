@@ -154,7 +154,7 @@ class ReinforcementProblem:
         pelletCount = self.game.pellets.pelletList.__len__()
 
         reward = 0
-        if pelletCount<previousPelletCount:
+        if pelletCount < previousPelletCount:
             reward += 5
         if action == state.pelletDirection:
             reward +=10
