@@ -35,39 +35,22 @@ class Pacman(Entity):
         self.alive = False
         self.direction = STOP
     
-    
-    def preUpdate(self):
-        return self.overshotTarget()    
-
-
     def update(self, dt):
-        print("UDPATRE PACMAN", self.position.x, self.position.y)
         self.sprites.update(dt)
         self.lastDt = dt
         self.position += self.directions[self.direction] * self.speed * dt
         if self.overshotTarget():
-            print('OVRESHOT TARGET')
-            print("LEARNT DIRECTION", self.learntDirection)
-            # print("self.direction", self.direction)
-            # if self.lastOvershotTarget is not None:
-            #     self.node = self.lastOvershotTarget
-            # self.direction = STOP
-            # return
             self.node = self.target
             direction = self.learntDirection
             if self.node.neighbors[PORTAL] is not None:
                 self.node = self.node.neighbors[PORTAL]
             self.target = self.getNewTarget(direction)
             if self.target is not self.node:
-                # print("SETTING DIRECTION", direction)
                 self.direction = direction
             else:
                 self.target = self.getNewTarget(self.direction)
             self.setPosition()
-        # else:
-        #     if self.oppositeDirection(direction):
-        #         self.reverseDirection()
-
+  
     def willOvershootTarget(self):
         tempPosition =self.position+ self.directions[self.direction] * self.speed * self.lastDt
         if self.target is not None:
@@ -80,9 +63,7 @@ class Pacman(Entity):
 
     def getNewTarget(self, direction):
         if self.validDirection(direction):
-            # print('new target if')
             return self.node.neighbors[direction]
-        # print('new target else')
         return self.node
     
     def validDirections(self):

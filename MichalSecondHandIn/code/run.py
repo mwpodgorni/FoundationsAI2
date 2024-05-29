@@ -313,7 +313,6 @@ class GameController(object):
 
     def setPacmanInRandomPosition(self):
         homeNode: Node = self.nodes.getNodeFromTiles(*self.mazedata.obj.addOffset(2, 3))
-
         self.pacman = Pacman(self.nodes.getRandomNodeAwayFrom(homeNode.position, 60.0))  # type: ignore
 
     def resetLevel(self):
@@ -365,7 +364,6 @@ class GameController(object):
     def getNodesSafe(self, direction):
         nodes = []
         currentNode = self.pacman.node
-        lastDirection = STOP
         ghostNodes = []
         for g in self.ghosts:
             if g.mode.current in [SCATTER, CHASE]:
@@ -373,7 +371,6 @@ class GameController(object):
         for i in range(6):
             if currentNode.neighbors[direction] is not None:
                 currentNode = currentNode.neighbors[direction]
-                # lastDirection=direction
                 nodeTuple = (currentNode.position.x, currentNode.position.y)
                 if nodeTuple in ghostNodes:
                     nodes.append(-1)
@@ -381,18 +378,6 @@ class GameController(object):
                     nodes.append(0)
             else:
                 return -1 not in nodes
-                
-            # elif i == 0:
-            #     return []
-            # else:
-            #     lastDirection, anyNeighbour = self.getAnyNeighbour(currentNode, lastDirection)
-            #     currentNode = anyNeighbour
-            # nodeTuple = (currentNode.position.x, currentNode.position.y)
-            # if nodeTuple in ghostNodes:
-            #     nodes.append(-1)
-            # else:
-            #     nodes.append(0)
-            # nodes.append((currentNode.position.x, currentNode.position.y))
         return -1 not in nodes
 
     def getAnyNeighbour(self, node, exludeDirection):
@@ -401,7 +386,6 @@ class GameController(object):
                 return direction, node.neighbors[direction]
         if node.neighbors[PORTAL] is not None:
             return exludeDirection, node.neighbors[PORTAL]
-        print("PROBLEM", node.neighbors, exludeDirection)
 
     def getPelletDirection(self):
         self.goal = self.getNewNearestPellet()
