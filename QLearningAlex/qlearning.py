@@ -11,7 +11,6 @@ import random
 
 import pygame
 
-
 from vector import Vector2
 from run import GameController
 from constants import UP, DOWN, RIGHT, LEFT
@@ -19,25 +18,31 @@ from constants import UP, DOWN, RIGHT, LEFT
 
 class State:
     def __init__(self, 
-                playerNode: Vector2,
                 pelletDirection: int, 
                 up: bool,
                 down: bool, 
                 left: bool, 
                 right: bool
                 ) -> None:
-        # TODO: Add more variables in the state so that the agent can account for more things in its environment
-        # examples: (ghosts,)
-        # warning: The more variables you add, the more space it will have search and it will take more time to train
-        self.playerNode = playerNode.asTuple()
+        
         self.pelletDirection = pelletDirection
-        self.ghostUp = up;
+        self.ghostUp = up
         self.ghostDown = down
         self.ghostLeft = left
         self.ghostRight = right
+    
+    def directionToString(self, dir: int) -> str:
+        if dir == UP:
+            return "UP"
+        if dir == DOWN:
+            return "DOWN"
+        if dir == LEFT:
+            return "LEFT"
+        if dir == RIGHT:
+            return "RIGHT"
 
     def __str__(self) -> str:
-        return str(self.pelletDirection)
+        return "Pellet : " + self.directionToString(self.pelletDirection) + " , " + "GHOST : " + str(self.ghostUp) + " , " + str(self.ghostDown) + " , " + str(self.ghostLeft) + " , " + str(self.ghostRight)
 
 class Action(IntEnum):
     UP = UP
@@ -94,26 +99,25 @@ class QValueStore:
 class ReinforcementProblem:
     def __init__(self) -> None:
         self.game = GameController()
-        self.game.restartGameRandom()
+        self.game.startGame()
 
     def getCurrentState(self) -> State:
-        return State(self.game.pacman.target.position, 
-                     self.game.getPelletDirection(),
-                     self.game.getNodesSafe(UP),
-                     self.game.getNodesSafe(DOWN),
-                     self.game.getNodesSafe(LEFT),
-                     self.game.getNodesSafe(RIGHT)
+        return State(self.game.getPelletDirection(),
+                     self.game.checkGhostInNodes(UP),
+                     self.game.checkGhostInNodes(DOWN),
+                     self.game.checkGhostInNodes(LEFT),
+                     self.game.checkGhostInNodes(RIGHT)
                      )
 
     # Choose a random starting state for the problem.
     def getRandomState(self) -> State:
-        self.game.setPacmanInRandomPosition()
+        self.game.setPacman
         return self.getCurrentState()
 
     # Get the available actions for the given state.
     def getAvailableActions(self, state: State) -> list[Action]:
         directions = self.game.pacman.validDirections()
-
+        
         def intDirectionToString(dir: Action) -> str:
             match dir:
                 case Action.UP:
@@ -127,7 +131,7 @@ class ReinforcementProblem:
                 case _:
                     return "INV"
 
-        # print(list(map(intDirectionToString, directions)))
+        print(list(map(intDirectionToString, directions)))
         return directions
 
     def updateGameNTimes(self, frames: int):
@@ -142,14 +146,55 @@ class ReinforcementProblem:
             self.game.update()
             currentTime = pygame.time.get_ticks()
 
+    def ActionToString(self, dir: int) -> str:
+        match dir:
+            case Action.UP:
+                return "UP"
+            case Action.DOWN:
+                return "DOWN"
+            case Action.LEFT:
+                return "LEFT"
+            case Action.RIGHT:
+                return "RIGHT"
+            case _:
+                return "INV"
+
     # Take the given action and state, and return
     # a pair consisting of the reward and the new state.
     def takeAction(self, state: State, action: Action) -> tuple[float, State]:
-        previousScore = self.game.score
+        
         self.game.pacman.learntDirection = action
+        prevScore = self.game.score
+
+        # print(state)
+        # print("Action : " + self.ActionToString(action))
+
         self.updateGameForSeconds(0.1)
-        # TODO: Adjust the reward function to make it learn better
-        reward = self.game.score - previousScore
+        
+        # Initial reward
+        reward = 0
+
+        # Rewarded for going towards nearest pellet
+        if action == state.pelletDirection:
+            reward += 3
+        else:
+            # Punished for not doing so
+            reward -= 1
+
+        # Bigger rewards for increasing the score
+        if prevScore < self.game.score:
+            reward += 6
+
+        # Punished for going towards a direction that contains ghosts.
+        if action == LEFT and state.ghostLeft :
+            reward = -20
+        elif action == RIGHT and state.ghostRight :
+            reward = -20
+        elif action == UP and state.ghostUp :
+            reward = -20
+        elif action == DOWN and state.ghostDown :
+            reward = -20
+
         newState = self.getCurrentState()
         return reward, newState
 
@@ -177,16 +222,11 @@ def QLearning(
     walkLength,
 ):
     # Get a starting state.
-    state = problem.getRandomState()
+    state = problem.getCurrentState()
     saveIterations = 50
     # Repeat a number of times.
     i = 0
     while i < iterations:
-        if problem.game.pause.paused:
-            # print("game is paused. Waiting..")
-            time.sleep(1)          
-            problem.updateGameForSeconds(0.1)
-            continue
         if i % saveIterations == 0:
             print("Saving at iteration:", i)
             store.save()
@@ -202,7 +242,7 @@ def QLearning(
             action = random.choice(actions)
         # Otherwise pick the best action.
         else:
-            action = store.getBestAction(state, problem.getAvailableActions(state))
+            action = store.getBestAction(state, actions)
 
         # Carry out the action and retrieve the reward and new state.
         reward, newState = problem.takeAction(state, action)
@@ -220,7 +260,7 @@ def QLearning(
         q = (1 - learningRate) * q + learningRate * (reward + discountRate * maxQ)
 
         # Store the new Q-value.
-        store.storeQValue(state, action, q)
+        # store.storeQValue(state, action, q)
 
         # And update the state.
         state = newState
@@ -233,4 +273,4 @@ if __name__ == "__main__":
     store = QValueStore("training")
     problem = ReinforcementProblem()
 
-    QLearning(problem, 10000, 0.7, 0.75, 0.2, 0.01)
+    QLearning(problem, 100000, 0.7, 0.75, -1, -1)

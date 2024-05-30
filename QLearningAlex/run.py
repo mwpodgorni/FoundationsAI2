@@ -81,7 +81,7 @@ class GameController(object):
         self.mazedata.obj.setPortalPairs(self.nodes)
         self.mazedata.obj.connectHomeNodes(self.nodes)
         self.pacman = Pacman(
-            self.nodes.getNodeFromTiles(*self.mazedata.obj.pacmanStart), self.nodes
+            self.nodes.getNodeFromTiles(*self.mazedata.obj.pacmanStart)
         )
         self.pellets = PelletGroup(self.mazedata.obj.name + ".txt")
         self.ghosts = GhostGroup(self.nodes.getStartTempNode(), self.pacman)
@@ -240,7 +240,7 @@ class GameController(object):
                         if self.lives <= 0:
                             self.textgroup.showText(GAMEOVERTXT)
                             self.pause.setPause(
-                                pauseTime=3, func=self.restartGameRandom
+                                pauseTime=3, func=self.restartGame
                             )
                         else:
                             self.pause.setPause(pauseTime=3, func=self.resetLevel)
@@ -316,7 +316,6 @@ class GameController(object):
 
     def setPacmanInRandomPosition(self):
         homeNode: Node = self.nodes.getNodeFromTiles(*self.mazedata.obj.addOffset(2, 3))
-
         self.pacman = Pacman(self.nodes.getRandomNodeAwayFrom(homeNode.position, 60.0))  # type: ignore
 
     def resetLevel(self):
@@ -351,50 +350,61 @@ class GameController(object):
 
         pygame.display.update()
     
-    # defined by me
-    def pacmanPosition(self):
-        return (int(self.pacman.node.position.x), int(self.pacman.node.position.y))
-
-    def getNodesSafe(self, direction):
+    
+    # Additional Implementations
+    ## Ghost Check
+    def getNodesInDirection(self, direction, amount):
         nodes = []
-        currentNode = self.pacman.node
-        lastDirection = STOP
-        ghostNodes = [(g.target.position.x, g.target.position.y) for g in self.ghosts]
-        for i in range(6):
-            if currentNode.neighbors[direction] is not None:
-                currentNode = currentNode.neighbors[direction]
-                # lastDirection=direction
-                nodeTuple = (currentNode.position.x, currentNode.position.y)
-                if nodeTuple in ghostNodes:
-                    nodes.append(-1)
-                else:
-                    nodes.append(0)
+        node = self.pacman.node
+        prevDir = direction
+
+        for i in range(amount):
+            if node.neighbors[prevDir] is not None :
+                nextNode = node.neighbors[prevDir]
+                nodes.append(nextNode)
+                node = nextNode
             else:
-                return -1 not in nodes
-                
-            # elif i == 0:
-            #     return []
-            # else:
-            #     lastDirection, anyNeighbour = self.getAnyNeighbour(currentNode, lastDirection)
-            #     currentNode = anyNeighbour
-            # nodeTuple = (currentNode.position.x, currentNode.position.y)
-            # if nodeTuple in ghostNodes:
-            #     nodes.append(-1)
-            # else:
-            #     nodes.append(0)
-            # nodes.append((currentNode.position.x, currentNode.position.y))
-        return -1 not in nodes
-
-    def getAnyNeighbour(self, node, exludeDirection):
+                if len(nodes) >= 0:
+                    break
+                else:
+                    node, prevDir = self.getAnyNeighborNode(node, prevDir)
+                    nodes.append(node)
+            
+        return nodes
+    
+    def getAnyNeighborNode(self, node, prevDir):
         for direction in [UP, DOWN, LEFT, RIGHT]:
-            if direction != exludeDirection * -1 and node.neighbors[direction] is not None:
-                return direction, node.neighbors[direction]
+            if direction != prevDir * -1 and node.neighbors[direction] is not None :
+                neighbor = node.neighbors[direction]
+                return neighbor, direction
         if node.neighbors[PORTAL] is not None:
-            return exludeDirection, node.neighbors[PORTAL]
-        print("PROBLEM", node.neighbors, exludeDirection)
+            return node.neighbors[PORTAL], direction
+    
+    def checkGhostInNodes(self, direction):
+        if self.ghosts != None :
+            nodes = self.getNodesInDirection(direction, 3)
 
+            ghostNodes = []
+            for ghost in self.ghosts:
+                if ghost.mode.current != FREIGHT:
+                    ghostNodes.append((ghost.target.position.x, ghost.target.position.y))
+                    ghostNodes.append((ghost.node.position.x, ghost.node.position.y))
+
+            if len(nodes) != 0:
+                for node in nodes :
+                    nodeTuple = (node.position.x, node.position.y)
+                    if nodeTuple in ghostNodes:
+                        return True  
+                return False
+            else : 
+                return False
+        else:
+            print("No Ghosts")
+            return False
+
+    ## Pellet Seeking
     def getPelletDirection(self):
-        self.goal = self.getNewNearestPellet()
+        self.goal = self.getNearestPellet().position
         return self.goalDirectionDij(self.pacman.validDirections())
 
     def goalDirectionDij(self, directions):
@@ -438,17 +448,23 @@ class GameController(object):
         path.reverse()
         return path
     
-    def getNewNearestPellet(self):
-        nearest_pellet = None
-        nearest_distance_squared = float('inf')
-        pacman_position = self.pacman.position
+
+    # Seeks the nearest pellet
+    def getNearestPellet(self):
+        shortestDistance = float('inf')
+        nearestPellet = None
+        
         for pellet in self.pellets.pelletList:
-            pellet_position = pellet.position
-            distance_squared = (pellet_position - pacman_position).magnitudeSquared()
-            if distance_squared < nearest_distance_squared:
-                nearest_distance_squared = distance_squared
-                nearest_pellet = pellet
-        return nearest_pellet.position
+            # Measure the Distance between this pellet and Pacman
+            distance = (pellet.position - self.pacman.position).magnitudeSquared()
+
+            # If this pellet is closer than any other distances known
+            # then choose this as the currently nearest pellet.
+            if distance < shortestDistance :
+                shortestDistance = distance
+                nearestPellet = pellet
+
+        return nearestPellet
 
 if __name__ == "__main__":
     game = GameController()
